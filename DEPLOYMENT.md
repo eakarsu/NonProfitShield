@@ -64,7 +64,7 @@ REPL_ID=your-repl-id
 REPLIT_DOMAINS=yourdomain.com,www.yourdomain.com
 
 # AI Features (REQUIRED for damage assessment)
-OPENAI_API_KEY=your-openai-api-key-here
+OPENROUTER_API_KEY=your-openrouter-api-key-here
 ```
 
 ### Optional Configuration

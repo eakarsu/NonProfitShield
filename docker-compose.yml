@@ -34,6 +34,7 @@ services:
       - REPL_ID=insurance-platform
       - REPLIT_DOMAINS=localhost
       - ISSUER_URL=https://replit.com/oidc
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy

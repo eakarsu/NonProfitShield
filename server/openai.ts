@@ -1,8 +1,9 @@
 import OpenAI from "openai";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+// Using OpenRouter API for AI model access
 const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
 });
 
 export interface DamageAssessment {
@@ -63,7 +64,7 @@ export async function analyzeDamageImages(base64Images: string[]): Promise<Damag
     ];
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "anthropic/claude-3.5-sonnet",
       messages,
       response_format: { type: "json_object" },
       max_tokens: 1000,
@@ -103,7 +104,7 @@ export async function analyzeDamageImages(base64Images: string[]): Promise<Damag
 export async function generateClaimSummary(claim: any): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "anthropic/claude-3.5-sonnet",
       messages: [
         {
           role: "system",
