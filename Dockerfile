@@ -1,61 +1,70 @@
-FROM node:20-alpine AS base
+FROM node:20-alpine
 
-# Install dependencies only when needed
-FROM base AS deps
+# Install PostgreSQL and necessary dependencies
+RUN apk add --no-cache postgresql postgresql-contrib curl
+
+# Create postgres user and data directory
+RUN adduser -D -s /bin/sh postgres
+RUN mkdir -p /var/lib/postgresql/data /var/run/postgresql
+RUN chown -R postgres:postgres /var/lib/postgresql /var/run/postgresql
+
+# Set up application
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-RUN npm ci --only=production
-
-# Build stage
-FROM base AS builder
-WORKDIR /app
+# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Set environment variables for build
-ENV NODE_ENV=production
-
 # Build the application
 RUN npm run build
 
-# Production stage
-FROM base AS runner
-WORKDIR /app
-
+# Set default environment variables
 ENV NODE_ENV=production
+ENV PORT=5000
+ENV DATABASE_URL=postgresql://postgres:password@localhost:5432/insurance_platform
+ENV PGHOST=localhost
+ENV PGPORT=5432
+ENV PGUSER=postgres
+ENV PGPASSWORD=password
+ENV PGDATABASE=insurance_platform
+ENV SESSION_SECRET=default-session-secret-change-in-production
+ENV REPL_ID=insurance-platform
+ENV REPLIT_DOMAINS=localhost
 
-# Create a non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Copy database initialization script
+COPY init-db.sql /docker-entrypoint-initdb.d/
 
-# Copy built application
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
-COPY --from=deps /app/node_modules ./node_modules
+# Create startup script
+RUN cat > /app/start.sh << 'EOF'
+#!/bin/sh
+# Initialize PostgreSQL
+su postgres -c 'initdb -D /var/lib/postgresql/data'
 
-# Copy database migration files
-COPY --from=builder /app/drizzle.config.ts ./
-COPY --from=builder /app/shared ./shared
-COPY --from=builder /app/server ./server
+# Start PostgreSQL
+su postgres -c 'postgres -D /var/lib/postgresql/data' &
 
-# Install production dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Wait for PostgreSQL to start
+sleep 5
 
-# Set proper permissions
-RUN chown -R nextjs:nodejs /app
-USER nextjs
+# Create database and user
+su postgres -c 'createdb insurance_platform'
+su postgres -c 'psql -d insurance_platform -f /docker-entrypoint-initdb.d/init-db.sql'
+
+# Start the Node.js application
+exec node dist/index.js
+EOF
+
+RUN chmod +x /app/start.sh
 
 # Expose port
 EXPOSE 5000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD curl -f http://localhost:5000/api/health || exit 1
 
-# Start the application
-CMD ["npm", "start"]
+# Start both PostgreSQL and the application
+CMD ["/app/start.sh"]
