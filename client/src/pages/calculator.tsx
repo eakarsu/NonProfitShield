@@ -409,7 +409,7 @@ export default function Calculator() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Calculator className="h-5 w-5" />
+                  <CalculatorIcon className="h-5 w-5" />
                   <span>Home Insurance Calculator</span>
                 </CardTitle>
               </CardHeader>
@@ -506,7 +506,7 @@ export default function Calculator() {
                     </div>
 
                     <Button type="submit" className="w-full" size="lg">
-                      <Calculator className="mr-2 h-4 w-4" />
+                      <CalculatorIcon className="mr-2 h-4 w-4" />
                       Calculate Home Premium
                     </Button>
                   </form>
