@@ -11,6 +11,11 @@ import Claims from "@/pages/claims";
 import SubmitClaim from "@/pages/submit-claim";
 import Payment from "@/pages/payment";
 import Consultation from "@/pages/consultation";
+import Calculator from "@/pages/calculator";
+import Coverage from "@/pages/coverage";
+import About from "@/pages/about";
+import Contact from "@/pages/contact";
+import FinancialReports from "@/pages/financial-reports";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -21,6 +26,11 @@ function Router() {
       {isLoading || !isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />
+          <Route path="/calculator" component={Calculator} />
+          <Route path="/coverage" component={Coverage} />
+          <Route path="/about" component={About} />
+          <Route path="/contact" component={Contact} />
+          <Route path="/financial-reports" component={FinancialReports} />
           <Route path="/consultation" component={Consultation} />
         </>
       ) : (
@@ -30,6 +40,11 @@ function Router() {
           <Route path="/claims" component={Claims} />
           <Route path="/submit-claim" component={SubmitClaim} />
           <Route path="/payment" component={Payment} />
+          <Route path="/calculator" component={Calculator} />
+          <Route path="/coverage" component={Coverage} />
+          <Route path="/about" component={About} />
+          <Route path="/contact" component={Contact} />
+          <Route path="/financial-reports" component={FinancialReports} />
           <Route path="/consultation" component={Consultation} />
         </>
       )}

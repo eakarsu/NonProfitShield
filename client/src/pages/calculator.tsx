@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calculator, Car, Home, DollarSign, Shield } from "lucide-react";
+import { Car, Home, DollarSign, Shield, Calculator as CalculatorIcon } from "lucide-react";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -248,7 +248,7 @@ export default function Calculator() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Calculator className="h-5 w-5" />
+                  <CalculatorIcon className="h-5 w-5" />
                   <span>Auto Insurance Calculator</span>
                 </CardTitle>
               </CardHeader>
@@ -396,7 +396,7 @@ export default function Calculator() {
                     </div>
 
                     <Button type="submit" className="w-full" size="lg">
-                      <Calculator className="mr-2 h-4 w-4" />
+                      <CalculatorIcon className="mr-2 h-4 w-4" />
                       Calculate Auto Premium
                     </Button>
                   </form>

@@ -27,16 +27,16 @@ export default function Footer() {
             <h3 className="font-semibold mb-4">Coverage</h3>
             <ul className="space-y-2 text-slate-400">
               <li>
-                <a href="#" className="hover:text-white transition-colors">Auto Insurance</a>
+                <a href="/coverage" className="hover:text-white transition-colors">Auto Insurance</a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">Home Insurance</a>
+                <a href="/coverage" className="hover:text-white transition-colors">Home Insurance</a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">Renters Insurance</a>
+                <a href="/coverage" className="hover:text-white transition-colors">Renters Insurance</a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">Umbrella Policy</a>
+                <a href="/coverage" className="hover:text-white transition-colors">Umbrella Policy</a>
               </li>
             </ul>
           </div>
@@ -45,16 +45,16 @@ export default function Footer() {
             <h3 className="font-semibold mb-4">Company</h3>
             <ul className="space-y-2 text-slate-400">
               <li>
-                <a href="#" className="hover:text-white transition-colors">About Us</a>
+                <a href="/about" className="hover:text-white transition-colors">About Us</a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">Financial Reports</a>
+                <a href="/financial-reports" className="hover:text-white transition-colors">Financial Reports</a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">Member Benefits</a>
+                <a href="/about" className="hover:text-white transition-colors">Member Benefits</a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">Contact</a>
+                <a href="/contact" className="hover:text-white transition-colors">Contact</a>
               </li>
             </ul>
           </div>
