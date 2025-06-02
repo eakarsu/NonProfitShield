@@ -26,17 +26,17 @@ export default function Header() {
             <>
               {/* Desktop Navigation */}
               <nav className="hidden md:flex items-center space-x-8">
-                <Link href="/">
-                  <a className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Dashboard</a>
+                <Link href="/" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
+                  Dashboard
                 </Link>
-                <Link href="/enrollment">
-                  <a className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Coverage</a>
+                <Link href="/enrollment" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
+                  Coverage
                 </Link>
-                <Link href="/claims">
-                  <a className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Claims</a>
+                <Link href="/claims" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
+                  Claims
                 </Link>
-                <Link href="/payment">
-                  <a className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Payments</a>
+                <Link href="/payment" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
+                  Payments
                 </Link>
               </nav>
 
@@ -72,9 +72,15 @@ export default function Header() {
             <>
               {/* Public Navigation */}
               <nav className="hidden md:flex items-center space-x-8">
-                <a href="#features" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Coverage</a>
-                <a href="#about" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">About</a>
-                <a href="#contact" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Support</a>
+                <Link href="/coverage" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
+                  Coverage
+                </Link>
+                <Link href="/about" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
+                  About
+                </Link>
+                <Link href="/contact" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
+                  Support
+                </Link>
               </nav>
 
               <div className="flex items-center space-x-4">

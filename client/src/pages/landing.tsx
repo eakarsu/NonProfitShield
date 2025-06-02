@@ -36,6 +36,7 @@ export default function Landing() {
                   variant="outline" 
                   size="lg"
                   className="border-2 border-slate-300 hover:border-slate-400 text-slate-700 px-8 py-4 text-lg"
+                  onClick={() => window.location.href = "/calculator"}
                 >
                   Calculate Premium
                 </Button>
@@ -179,19 +180,19 @@ export default function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-primary-500 to-primary-600">
+      <section className="py-16 bg-gradient-to-r from-slate-800 to-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
+          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6 drop-shadow-sm">
             Ready to Join the Future of Insurance?
           </h2>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto font-medium">
+          <p className="text-xl text-white mb-8 max-w-2xl mx-auto font-medium leading-relaxed drop-shadow-sm">
             Get your personalized quote in under 5 minutes. No hidden fees, no profit margins, just fair coverage.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg"
-              className="bg-white hover:bg-slate-50 text-primary-600 px-8 py-4 text-lg font-semibold shadow-lg"
+              className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 text-lg font-semibold shadow-lg border-2 border-primary-500 hover:border-primary-600"
               onClick={() => window.location.href = "/api/login"}
             >
               Get Your Quote
@@ -199,14 +200,14 @@ export default function Landing() {
             <Button 
               variant="outline" 
               size="lg"
-              className="border-2 border-white hover:bg-white hover:text-primary-600 text-white px-8 py-4 text-lg font-semibold"
+              className="border-2 border-white bg-transparent hover:bg-white hover:text-slate-800 text-white px-8 py-4 text-lg font-semibold shadow-lg"
               onClick={() => window.location.href = "/consultation"}
             >
               Schedule Consultation
             </Button>
           </div>
 
-          <div className="mt-8 text-white/80 text-sm font-medium">
+          <div className="mt-8 text-white text-sm font-medium">
             <p>✓ No obligations &nbsp;&nbsp;&nbsp; ✓ Instant estimates &nbsp;&nbsp;&nbsp; ✓ Member-owned</p>
           </div>
         </div>
