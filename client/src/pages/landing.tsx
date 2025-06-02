@@ -184,14 +184,14 @@ export default function Landing() {
           <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
             Ready to Join the Future of Insurance?
           </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto font-medium">
             Get your personalized quote in under 5 minutes. No hidden fees, no profit margins, just fair coverage.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg"
-              className="bg-white hover:bg-slate-50 text-primary-600 px-8 py-4 text-lg"
+              className="bg-white hover:bg-slate-50 text-primary-600 px-8 py-4 text-lg font-semibold shadow-lg"
               onClick={() => window.location.href = "/api/login"}
             >
               Get Your Quote
@@ -199,13 +199,14 @@ export default function Landing() {
             <Button 
               variant="outline" 
               size="lg"
-              className="border-2 border-white hover:bg-white hover:text-primary-600 text-white px-8 py-4 text-lg"
+              className="border-2 border-white hover:bg-white hover:text-primary-600 text-white px-8 py-4 text-lg font-semibold"
+              onClick={() => window.location.href = "/consultation"}
             >
               Schedule Consultation
             </Button>
           </div>
 
-          <div className="mt-8 text-blue-100 text-sm">
+          <div className="mt-8 text-white/80 text-sm font-medium">
             <p>✓ No obligations &nbsp;&nbsp;&nbsp; ✓ Instant estimates &nbsp;&nbsp;&nbsp; ✓ Member-owned</p>
           </div>
         </div>

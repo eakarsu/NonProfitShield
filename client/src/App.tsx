@@ -10,6 +10,7 @@ import Enrollment from "@/pages/enrollment";
 import Claims from "@/pages/claims";
 import SubmitClaim from "@/pages/submit-claim";
 import Payment from "@/pages/payment";
+import Consultation from "@/pages/consultation";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,7 +19,10 @@ function Router() {
   return (
     <Switch>
       {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
+        <>
+          <Route path="/" component={Landing} />
+          <Route path="/consultation" component={Consultation} />
+        </>
       ) : (
         <>
           <Route path="/" component={Home} />
@@ -26,6 +30,7 @@ function Router() {
           <Route path="/claims" component={Claims} />
           <Route path="/submit-claim" component={SubmitClaim} />
           <Route path="/payment" component={Payment} />
+          <Route path="/consultation" component={Consultation} />
         </>
       )}
       <Route component={NotFound} />
