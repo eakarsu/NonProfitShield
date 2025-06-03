@@ -1,0 +1,60 @@
+curl http://localhost:5005/api/health
+{"status":"ok","timestamp":"2025-06-03T00:32:09.190Z","uptime":743.297918817}root@ubuntu-4gb-ash-1:~#
+root@ubuntu-4gb-ash-1:~# sudo nginx -t
+2025/06/03 00:32:18 [warn] 216506#216506: protocol options redefined for 0.0.0.0:443 in /etc/nginx/sites-enabled/orderlybite.com:23
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+root@ubuntu-4gb-ash-1:~# sudo systemctl status nginx
+sudo systemctl reload nginx
+● nginx.service - A high performance web server and a reverse proxy server
+     Loaded: loaded (/usr/lib/systemd/system/nginx.service; enabled; preset: enabled)
+     Active: active (running) since Tue 2025-06-03 00:26:11 UTC; 6min ago
+       Docs: man:nginx(8)
+    Process: 215456 ExecStartPre=/usr/sbin/nginx -t -q -g daemon on; master_process on; (code=exited, status=0/SUCCESS)
+    Process: 215460 ExecStart=/usr/sbin/nginx -g daemon on; master_process on; (code=exited, status=0/SUCCESS)
+   Main PID: 215461 (nginx)
+      Tasks: 5 (limit: 9258)
+     Memory: 7.5M (peak: 12.6M)
+        CPU: 188ms
+     CGroup: /system.slice/nginx.service
+             ├─215461 "nginx: master process /usr/sbin/nginx -g daemon on; master_process on;"
+             ├─215928 "nginx: worker process"
+             ├─215929 "nginx: worker process"
+             ├─215930 "nginx: worker process"
+             └─215931 "nginx: worker process"
+
+Jun 03 00:26:11 ubuntu-4gb-ash-1 systemd[1]: Starting nginx.service - A high performance web server and a reverse proxy server...
+Jun 03 00:26:11 ubuntu-4gb-ash-1 nginx[215456]: 2025/06/03 00:26:11 [warn] 215456#215456: protocol options redefined for 0.0.0.0:44>
+Jun 03 00:26:11 ubuntu-4gb-ash-1 nginx[215460]: 2025/06/03 00:26:11 [warn] 215460#215460: protocol options redefined for 0.0.0.0:44>
+Jun 03 00:26:11 ubuntu-4gb-ash-1 systemd[1]: Started nginx.service - A high performance web server and a reverse proxy server.
+root@ubuntu-4gb-ash-1:~# sudo systemctl status nginx
+sudo systemctl reload nginx
+● nginx.service - A high performance web server and a reverse proxy server
+     Loaded: loaded (/usr/lib/systemd/system/nginx.service; enabled; preset: enabled)
+     Active: active (running) since Tue 2025-06-03 00:26:11 UTC; 6min ago
+       Docs: man:nginx(8)
+    Process: 215456 ExecStartPre=/usr/sbin/nginx -t -q -g daemon on; master_process on; (code=exited, status=0/SUCCESS)
+    Process: 215460 ExecStart=/usr/sbin/nginx -g daemon on; master_process on; (code=exited, status=0/SUCCESS)
+    Process: 216563 ExecReload=/usr/sbin/nginx -g daemon on; master_process on; -s reload (code=exited, status=0/SUCCESS)
+   Main PID: 215461 (nginx)
+      Tasks: 5 (limit: 9258)
+     Memory: 6.5M (peak: 13.5M)
+        CPU: 221ms
+     CGroup: /system.slice/nginx.service
+             ├─215461 "nginx: master process /usr/sbin/nginx -g daemon on; master_process on;"
+             ├─216565 "nginx: worker process"
+             ├─216566 "nginx: worker process"
+             ├─216567 "nginx: worker process"
+             └─216568 "nginx: worker process"
+
+Jun 03 00:26:11 ubuntu-4gb-ash-1 systemd[1]: Starting nginx.service - A high performance web server and a reverse proxy server...
+Jun 03 00:26:11 ubuntu-4gb-ash-1 nginx[215456]: 2025/06/03 00:26:11 [warn] 215456#215456: protocol options redefined for 0.0.0.0:44>
+Jun 03 00:26:11 ubuntu-4gb-ash-1 nginx[215460]: 2025/06/03 00:26:11 [warn] 215460#215460: protocol options redefined for 0.0.0.0:44>
+Jun 03 00:26:11 ubuntu-4gb-ash-1 systemd[1]: Started nginx.service - A high performance web server and a reverse proxy server.
+Jun 03 00:32:34 ubuntu-4gb-ash-1 systemd[1]: Reloading nginx.service - A high performance web server and a reverse proxy server...
+Jun 03 00:32:34 ubuntu-4gb-ash-1 nginx[216563]: 2025/06/03 00:32:34 [warn] 216563#216563: protocol options redefined for 0.0.0.0:44>
+Jun 03 00:32:34 ubuntu-4gb-ash-1 nginx[216563]: 2025/06/03 00:32:34 [notice] 216563#216563: signal process started
+Jun 03 00:32:34 ubuntu-4gb-ash-1 systemd[1]: Reloaded nginx.service - A high performance web server and a reverse proxy server.
+root@ubuntu-4gb-ash-1:~# sudo ln -s /etc/nginx/sites-available/insurance.orderlybite.com /etc/nginx/sites-enabled/
+root@ubuntu-4gb-ash-1:~# sudo ufw status
+Status: inactive

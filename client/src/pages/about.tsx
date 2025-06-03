@@ -118,6 +118,86 @@ export default function About() {
           </CardContent>
         </Card>
 
+        {/* AI Cost Reduction Benefits */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-slate-900 text-center mb-8">How AI Reduces Your Insurance Costs</h2>
+          <Card className="mb-8">
+            <CardContent className="p-8">
+              <p className="text-lg text-slate-600 text-center mb-8">
+                By leveraging artificial intelligence in underwriting and claims processing, we eliminate inefficiencies 
+                that typically cost the insurance industry up to $160 billion over five years. These savings are passed 
+                directly to our members through lower premiums.
+              </p>
+            </CardContent>
+          </Card>
+
+          <div className="grid md:grid-cols-2 gap-8 mb-12">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Award className="h-5 w-5 text-primary-600" />
+                  <span>Automated Underwriting</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-slate-600 mb-4">
+                  Our AI reduces underwriting time from 3-5 days to just 12.4 minutes for standard policies, 
+                  while maintaining high accuracy and comprehensive risk assessment.
+                </p>
+                <ul className="text-sm text-slate-600 space-y-1">
+                  <li>• 70% reduction in data entry time</li>
+                  <li>• 31% faster processing for complex policies</li>
+                  <li>• Enhanced risk assessment using diverse data sources</li>
+                  <li>• Personalized policies and pricing</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <TrendingUp className="h-5 w-5 text-secondary-600" />
+                  <span>Intelligent Claims Processing</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-slate-600 mb-4">
+                  AI accelerates claims resolution from weeks to minutes, reducing processing costs by up to 40% 
+                  while improving accuracy and fraud detection.
+                </p>
+                <ul className="text-sm text-slate-600 space-y-1">
+                  <li>• 30% reduction in manual labor</li>
+                  <li>• 30% faster claims processing by 2025</li>
+                  <li>• Enhanced fraud detection capabilities</li>
+                  <li>• Reduced inbound call volume</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center">Real Impact on Your Premiums</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-6 text-center">
+                <div>
+                  <div className="text-3xl font-bold text-primary-600 mb-2">40%</div>
+                  <div className="text-sm text-slate-600">Lower claims processing costs</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-secondary-600 mb-2">70%</div>
+                  <div className="text-sm text-slate-600">Reduction in data entry time</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-green-600 mb-2">30%</div>
+                  <div className="text-sm text-slate-600">Faster claims resolution</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Technology */}
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-slate-900 text-center mb-8">Technology That Works For You</h2>
@@ -131,14 +211,14 @@ export default function About() {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-600 mb-4">
-                  Our advanced computer vision technology can analyze damage photos instantly, 
-                  providing accurate assessments that speed up your claims process.
+                  Our advanced computer vision technology analyzes damage photos instantly, 
+                  providing accurate assessments that reduce claim resolution from weeks to minutes.
                 </p>
                 <ul className="text-sm text-slate-600 space-y-1">
-                  <li>• Instant photo analysis</li>
-                  <li>• Accurate damage estimation</li>
-                  <li>• Reduced processing time</li>
-                  <li>• 24/7 availability</li>
+                  <li>• Instant photo analysis and damage detection</li>
+                  <li>• Automated data extraction from documents</li>
+                  <li>• Enhanced fraud detection patterns</li>
+                  <li>• 24/7 availability with consistent accuracy</li>
                 </ul>
               </CardContent>
             </Card>
