@@ -1,0 +1,34 @@
+sudo docker buildx build --platform linux/amd64,linux/arm64 -t eakarsun4/non-profit-insurance:latest --push .
+[+] Building 34.4s (11/30)                                                                        docker-container:trusting_lamport
+ => [internal] load build definition from Dockerfile                                                                           0.0s
+ => => transferring dockerfile: 2.34kB                                                                                         0.0s
+ => [linux/amd64 internal] load metadata for docker.io/library/node:20-alpine                                                  0.6s
+ => [linux/arm64 internal] load metadata for docker.io/library/node:20-alpine                                                  0.6s
+ => [auth] library/node:pull token for registry-1.docker.io                                                                    0.0s
+ => [internal] load .dockerignore                                                                                              0.0s
+ => => transferring context: 2B                                                                                                0.0s
+ => [internal] load build context                                                                                              0.0s
+ => => transferring context: 52.27kB                                                                                           0.0s
+ => CACHED [linux/arm64  1/12] FROM docker.io/library/node:20-alpine@sha256:d3507a213936fe4ef54760a186e113db5188472d9efdf4916  0.0s
+ => => resolve docker.io/library/node:20-alpine@sha256:d3507a213936fe4ef54760a186e113db5188472d9efdf491686bd94580a1c1e8        0.0s
+ => CACHED [linux/amd64  1/12] FROM docker.io/library/node:20-alpine@sha256:d3507a213936fe4ef54760a186e113db5188472d9efdf4916  0.0s
+ => => resolve docker.io/library/node:20-alpine@sha256:d3507a213936fe4ef54760a186e113db5188472d9efdf491686bd94580a1c1e8        0.0s
+ => [linux/arm64  2/12] RUN apk add --no-cache postgresql postgresql-contrib curl                                             33.5s
+ => CANCELED [linux/amd64  2/12] RUN apk add --no-cache postgresql postgresql-contrib curl                                    33.7s
+ => ERROR [linux/arm64  3/12] RUN adduser -D -s /bin/sh postgres                                                               0.1s
+------
+ > [linux/arm64  3/12] RUN adduser -D -s /bin/sh postgres:
+0.129 adduser: user 'postgres' in use
+------
+
+ 1 warning found (use docker --debug to expand):
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "SESSION_SECRET") (line 33)
+Dockerfile:7
+--------------------
+   5 |
+   6 |     # Create postgres user and data directory
+   7 | >>> RUN adduser -D -s /bin/sh postgres
+   8 |     RUN mkdir -p /var/lib/postgresql/data /var/run/postgresql
+   9 |     RUN chown -R postgres:postgres /var/lib/postgresql /var/run/postgresql
+--------------------
+ERROR: failed to solve: process "/bin/sh -c adduser -D -s /bin/sh postgres" did not complete successfully: exit code: 1

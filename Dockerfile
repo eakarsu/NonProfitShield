@@ -3,8 +3,8 @@ FROM node:20-alpine
 # Install PostgreSQL and necessary dependencies
 RUN apk add --no-cache postgresql postgresql-contrib curl
 
-# Create postgres user and data directory
-RUN adduser -D -s /bin/sh postgres
+# Create postgres user and data directory (if not exists)
+RUN id postgres || adduser -D -s /bin/sh postgres
 RUN mkdir -p /var/lib/postgresql/data /var/run/postgresql
 RUN chown -R postgres:postgres /var/lib/postgresql /var/run/postgresql
 
@@ -30,7 +30,7 @@ ENV PGPORT=5432
 ENV PGUSER=postgres
 ENV PGPASSWORD=password
 ENV PGDATABASE=insurance_platform
-ENV SESSION_SECRET=default-session-secret-change-in-production
+ENV SESSION_SECRET=change-this-secure-session-secret-in-production
 ENV REPL_ID=insurance-platform
 ENV REPLIT_DOMAINS=localhost
 
