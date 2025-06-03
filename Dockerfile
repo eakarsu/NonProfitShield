@@ -41,17 +41,17 @@ COPY init-db.sql /docker-entrypoint-initdb.d/
 RUN cat > /app/start.sh << 'EOF'
 #!/bin/sh
 # Initialize PostgreSQL
-su postgres -c 'initdb -D /var/lib/postgresql/data'
+runuser -u postgres -- initdb -D /var/lib/postgresql/data
 
 # Start PostgreSQL
-su postgres -c 'postgres -D /var/lib/postgresql/data' &
+runuser -u postgres -- postgres -D /var/lib/postgresql/data &
 
 # Wait for PostgreSQL to start
 sleep 5
 
 # Create database and user
-su postgres -c 'createdb insurance_platform'
-su postgres -c 'psql -d insurance_platform -f /docker-entrypoint-initdb.d/init-db.sql'
+runuser -u postgres -- createdb insurance_platform
+runuser -u postgres -- psql -d insurance_platform -f /docker-entrypoint-initdb.d/init-db.sql
 
 # Start the Node.js application
 exec node dist/index.js
