@@ -40,17 +40,17 @@ COPY init-db.sql /docker-entrypoint-initdb.d/
 # Create startup script
 RUN echo '#!/bin/sh' > /app/start.sh && \
     echo '# Initialize PostgreSQL' >> /app/start.sh && \
-    echo 'runuser -u postgres -- initdb -D /var/lib/postgresql/data' >> /app/start.sh && \
+    echo 'su postgres -c "initdb -D /var/lib/postgresql/data"' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Start PostgreSQL' >> /app/start.sh && \
-    echo 'runuser -u postgres -- postgres -D /var/lib/postgresql/data &' >> /app/start.sh && \
+    echo 'su postgres -c "postgres -D /var/lib/postgresql/data" &' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Wait for PostgreSQL to start' >> /app/start.sh && \
     echo 'sleep 5' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Create database and user' >> /app/start.sh && \
-    echo 'runuser -u postgres -- createdb insurance_platform' >> /app/start.sh && \
-    echo 'runuser -u postgres -- psql -d insurance_platform -f /docker-entrypoint-initdb.d/init-db.sql' >> /app/start.sh && \
+    echo 'su postgres -c "createdb insurance_platform"' >> /app/start.sh && \
+    echo 'su postgres -c "psql -d insurance_platform -f /docker-entrypoint-initdb.d/init-db.sql"' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Start the Node.js application' >> /app/start.sh && \
     echo 'exec node dist/index.js' >> /app/start.sh && \
