@@ -87,6 +87,15 @@ CREATE INDEX IF NOT EXISTS idx_payments_policy_id ON payments(policy_id);
 CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
+-- Create insurance_user role if it doesn't exist
+DO $$
+BEGIN
+   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'insurance_user') THEN
+      CREATE ROLE insurance_user WITH LOGIN PASSWORD 'insurance_password';
+   END IF;
+END
+$$;
+
 -- Insert sample data for demonstration (you can remove this in production)
 INSERT INTO users (id, email, first_name, last_name, profile_image_url) VALUES 
 ('demo-user-1', 'demo@example.com', 'Demo', 'User', 'https://example.com/avatar.jpg')
