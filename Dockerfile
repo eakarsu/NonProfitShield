@@ -38,26 +38,23 @@ ENV REPLIT_DOMAINS=localhost
 COPY init-db.sql /docker-entrypoint-initdb.d/
 
 # Create startup script
-RUN cat > /app/start.sh << 'EOF'
-#!/bin/sh
-# Initialize PostgreSQL
-runuser -u postgres -- initdb -D /var/lib/postgresql/data
-
-# Start PostgreSQL
-runuser -u postgres -- postgres -D /var/lib/postgresql/data &
-
-# Wait for PostgreSQL to start
-sleep 5
-
-# Create database and user
-runuser -u postgres -- createdb insurance_platform
-runuser -u postgres -- psql -d insurance_platform -f /docker-entrypoint-initdb.d/init-db.sql
-
-# Start the Node.js application
-exec node dist/index.js
-EOF
-
-RUN chmod +x /app/start.sh
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo '# Initialize PostgreSQL' >> /app/start.sh && \
+    echo 'runuser -u postgres -- initdb -D /var/lib/postgresql/data' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Start PostgreSQL' >> /app/start.sh && \
+    echo 'runuser -u postgres -- postgres -D /var/lib/postgresql/data &' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Wait for PostgreSQL to start' >> /app/start.sh && \
+    echo 'sleep 5' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Create database and user' >> /app/start.sh && \
+    echo 'runuser -u postgres -- createdb insurance_platform' >> /app/start.sh && \
+    echo 'runuser -u postgres -- psql -d insurance_platform -f /docker-entrypoint-initdb.d/init-db.sql' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Start the Node.js application' >> /app/start.sh && \
+    echo 'exec node dist/index.js' >> /app/start.sh && \
+    chmod +x /app/start.sh
 
 # Expose port
 EXPOSE 5000
