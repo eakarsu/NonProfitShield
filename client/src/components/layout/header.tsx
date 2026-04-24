@@ -1,10 +1,43 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Shield, Menu } from "lucide-react";
-import { Link } from "wouter";
+import { Shield, Menu, User, LogOut, Settings } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Header() {
   const { user, isAuthenticated } = useAuth();
+  const [location, setLocation] = useLocation();
+
+  const handleLocalLogout = async () => {
+    try {
+      await apiRequest("POST", "/api/auth/local-logout");
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      setLocation("/");
+    } catch {
+      // Fall back to Replit logout
+      window.location.href = "/api/logout";
+    }
+  };
+
+  const navLink = (href: string, label: string) => (
+    <Link
+      href={href}
+      className={`font-medium transition-colors ${
+        location === href
+          ? "text-primary-500"
+          : "text-slate-600 hover:text-slate-900"
+      }`}
+    >
+      {label}
+    </Link>
+  );
 
   return (
     <header className="bg-white shadow-sm border-b border-slate-200">
@@ -19,48 +52,53 @@ export default function Header() {
                 <span className="text-xl font-semibold text-slate-900">SafeGuard Mutual</span>
               </div>
             </Link>
-            <span className="text-sm bg-secondary-100 text-secondary-800 px-2 py-1 rounded-full">Non-Profit</span>
+            <span className="text-sm bg-secondary-100 text-secondary-800 px-2 py-1 rounded-full">
+              Non-Profit
+            </span>
           </div>
-          
+
           {isAuthenticated ? (
             <>
               {/* Desktop Navigation */}
               <nav className="hidden md:flex items-center space-x-8">
-                <Link href="/" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
-                  Dashboard
-                </Link>
-                <Link href="/enrollment" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
-                  Coverage
-                </Link>
-                <Link href="/claims" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
-                  Claims
-                </Link>
-                <Link href="/payment" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
-                  Payments
-                </Link>
+                {navLink("/", "Dashboard")}
+                {navLink("/policies", "Policies")}
+                {navLink("/claims", "Claims")}
+                {navLink("/payment", "Payments")}
               </nav>
 
               <div className="flex items-center space-x-4">
-                <div className="hidden sm:flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
-                      {user?.firstName?.[0]}{user?.lastName?.[0]}
-                    </span>
-                  </div>
-                  <div className="hidden md:block">
-                    <div className="text-sm font-medium text-slate-900">
-                      {user?.firstName} {user?.lastName}
-                    </div>
-                  </div>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => window.location.href = "/api/logout"}
-                  className="text-slate-600 hover:text-slate-900"
-                >
-                  Sign Out
-                </Button>
+                {/* User dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">
+                          {user?.firstName?.[0]}
+                          {user?.lastName?.[0]}
+                        </span>
+                      </div>
+                      <span className="hidden md:inline text-sm font-medium text-slate-900">
+                        {user?.firstName} {user?.lastName}
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => setLocation("/profile")}>
+                      <User className="h-4 w-4 mr-2" />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLocation("/profile")}>
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLocalLogout}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Mobile menu button */}
@@ -72,31 +110,22 @@ export default function Header() {
             <>
               {/* Public Navigation */}
               <nav className="hidden md:flex items-center space-x-8">
-                <Link href="/coverage" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
-                  Coverage
-                </Link>
-                <Link href="/about" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
-                  About
-                </Link>
-                <Link href="/contact" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
-                  Support
-                </Link>
+                {navLink("/coverage", "Coverage")}
+                {navLink("/about", "About")}
+                {navLink("/contact", "Support")}
               </nav>
 
-              <div className="flex items-center space-x-4">
-                <Button 
-                  variant="ghost"
-                  onClick={() => window.location.href = "/api/login"}
-                  className="text-slate-600 hover:text-slate-900 font-medium"
-                >
-                  Sign In
-                </Button>
-                <Button 
-                  onClick={() => window.location.href = "/api/login"}
-                  className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 font-medium"
-                >
-                  Get Coverage
-                </Button>
+              <div className="flex items-center space-x-3">
+                <Link href="/login">
+                  <Button variant="ghost" className="text-slate-600 hover:text-slate-900 font-medium">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 font-medium">
+                    Get Coverage
+                  </Button>
+                </Link>
               </div>
             </>
           )}

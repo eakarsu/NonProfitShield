@@ -24,10 +24,10 @@ export default function Landing() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 text-lg"
-                  onClick={() => window.location.href = "/api/login"}
+                  onClick={() => window.location.href = "/register"}
                 >
                   <Shield className="mr-2 h-5 w-5" />
                   Start Your Application
@@ -193,7 +193,7 @@ export default function Landing() {
             <Button 
               size="lg"
               className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 text-lg font-semibold shadow-lg border-2 border-primary-500 hover:border-primary-600"
-              onClick={() => window.location.href = "/api/login"}
+              onClick={() => window.location.href = "/register"}
             >
               Get Your Quote
             </Button>

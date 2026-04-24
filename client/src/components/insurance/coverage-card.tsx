@@ -1,10 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Home, Car } from "lucide-react";
-import type { Policy } from "@shared/schema";
 
 interface CoverageCardProps {
-  policy: Policy;
+  policy: any;
 }
 
 export default function CoverageCard({ policy }: CoverageCardProps) {

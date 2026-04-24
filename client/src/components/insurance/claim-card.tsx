@@ -1,10 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, DollarSign, FileText } from "lucide-react";
-import type { Claim } from "@shared/schema";
 
 interface ClaimCardProps {
-  claim: Claim;
+  claim: any;
 }
 
 export default function ClaimCard({ claim }: ClaimCardProps) {

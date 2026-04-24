@@ -15,11 +15,11 @@ export default function Payment() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: policies } = useQuery({
+  const { data: policies } = useQuery<any>({
     queryKey: ["/api/policies"],
   });
 
-  const { data: payments } = useQuery({
+  const { data: payments } = useQuery<any>({
     queryKey: ["/api/payments"],
   });
 
@@ -81,7 +81,9 @@ export default function Payment() {
     }
   };
 
-  const pendingPayments = payments?.filter(p => p.status === "pending") || [];
+  const paymentsList = Array.isArray(payments) ? payments : payments?.data || [];
+  const policiesList = Array.isArray(policies) ? policies : policies?.data || [];
+  const pendingPayments = paymentsList.filter((p: any) => p.status === "pending");
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -112,7 +114,7 @@ export default function Payment() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {pendingPayments.map((payment) => (
+                  {pendingPayments.map((payment: any) => (
                     <BitcoinPayment key={payment.id} payment={payment} />
                   ))}
                 </CardContent>
@@ -128,9 +130,9 @@ export default function Payment() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {policies && policies.length > 0 ? (
+                {policiesList && policiesList.length > 0 ? (
                   <div className="space-y-4">
-                    {policies.map((policy) => (
+                    {policiesList.map((policy: any) => (
                       <div 
                         key={policy.id} 
                         className="border border-slate-200 rounded-lg p-4 hover:border-primary-300 transition-colors"
@@ -196,9 +198,9 @@ export default function Payment() {
                 <CardTitle>Payment History</CardTitle>
               </CardHeader>
               <CardContent>
-                {payments && payments.length > 0 ? (
+                {paymentsList && paymentsList.length > 0 ? (
                   <div className="space-y-4">
-                    {payments.map((payment) => (
+                    {paymentsList.map((payment: any) => (
                       <div 
                         key={payment.id}
                         className="flex items-center justify-between p-4 border border-slate-200 rounded-lg"

@@ -26,9 +26,10 @@ export default function SubmitClaim() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: policies } = useQuery({
+  const { data: policiesData } = useQuery<any>({
     queryKey: ["/api/policies"],
   });
+  const policies = Array.isArray(policiesData) ? policiesData : policiesData?.data || [];
 
   const form = useForm<ClaimSubmission>({
     resolver: zodResolver(claimSubmissionSchema),
@@ -204,7 +205,7 @@ export default function SubmitClaim() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {policies?.map((policy) => (
+                          {policies?.map((policy: any) => (
                             <SelectItem key={policy.id} value={policy.id.toString()}>
                               {policy.type.charAt(0).toUpperCase() + policy.type.slice(1)} Insurance - 
                               ${parseFloat(policy.coverageAmount).toLocaleString()} Coverage
