@@ -15,7 +15,7 @@ import {
   resetPasswordSchema,
   updateProfileSchema,
 } from "@shared/schema";
-import { analyzeDamageImages } from "./openai";
+import { analyzeDamageImages, claimsChatbot, assessRisk, recommendCoverage } from "./openai";
 import multer from "multer";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
@@ -1105,6 +1105,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==========================================
+  // AI Routes
+  // ==========================================
+
+  app.post("/api/ai/claims-chatbot", isLocalAuthenticated, async (req: any, res) => {
+    try {
+      const { question, context } = req.body || {};
+      if (!question) {
+        return res.status(400).json({ message: "question is required" });
+      }
+      const answer = await claimsChatbot(question, context);
+      res.json({ answer });
+    } catch (error: any) {
+      console.error("Claims chatbot route error:", error);
+      res.status(500).json({ message: error.message || "Claims chatbot failed" });
+    }
+  });
+
+  app.post("/api/ai/risk-assessment", isLocalAuthenticated, async (req: any, res) => {
+    try {
+      const intake = req.body || {};
+      if (!intake || Object.keys(intake).length === 0) {
+        return res.status(400).json({ message: "intake payload is required" });
+      }
+      const result = await assessRisk(intake);
+      res.json(result);
+    } catch (error: any) {
+      console.error("Risk assessment route error:", error);
+      res.status(500).json({ message: error.message || "Risk assessment failed" });
+    }
+  });
+
+  app.post("/api/ai/coverage-recommendation", isLocalAuthenticated, async (req: any, res) => {
+    try {
+      const { profile, available } = req.body || {};
+      if (!profile || !Array.isArray(available)) {
+        return res.status(400).json({ message: "profile (object) and available (array) are required" });
+      }
+      const result = await recommendCoverage(profile, available);
+      res.json(result);
+    } catch (error: any) {
+      console.error("Coverage recommendation route error:", error);
+      res.status(500).json({ message: error.message || "Coverage recommendation failed" });
+    }
+  });
+
+  require("./extraRoutes").registerExtraRoutes(app, isLocalAuthenticated);
   const httpServer = createServer(app);
   return httpServer;
 }

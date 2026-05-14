@@ -130,3 +130,74 @@ export async function generateClaimSummary(claim: any): Promise<string> {
     return "Unable to generate claim summary";
   }
 }
+
+export async function claimsChatbot(question: string, context?: any): Promise<string> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful insurance claims assistant for a nonprofit insurance platform. Answer general questions about claim status, the claims process, required documents, and timelines. Always note that you cannot access the live claims database in this conversation, and direct the user to file a ticket for case-specific status. Be concise and friendly."
+        },
+        {
+          role: "user",
+          content: `Question: ${question}\n\nOptional context (may include policy/claim metadata):\n${JSON.stringify(context || {}, null, 2)}`
+        }
+      ],
+      max_tokens: 500,
+    });
+    return response.choices[0].message.content || "Unable to answer right now.";
+  } catch (error) {
+    console.error("Claims chatbot error:", error);
+    throw new Error("Failed to answer claims question: " + (error as Error).message);
+  }
+}
+
+export async function assessRisk(intake: any): Promise<any> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet",
+      messages: [
+        {
+          role: "system",
+          content: "You are an insurance risk analyst for a nonprofit insurance program. Score the applicant's risk and propose a premium band. Return strict JSON: { riskScore (0-100), riskLevel (low/medium/high), drivers, suggestedPremiumBand, recommendedCoverages, notes }. Output ONLY valid JSON."
+        },
+        {
+          role: "user",
+          content: `Risk intake:\n${JSON.stringify(intake, null, 2)}`
+        }
+      ],
+      max_tokens: 800,
+    });
+    const text = response.choices[0].message.content || "{}";
+    try { return JSON.parse(text); } catch { return { rawAnalysis: text }; }
+  } catch (error) {
+    console.error("Risk assessor error:", error);
+    throw new Error("Failed to assess risk: " + (error as Error).message);
+  }
+}
+
+export async function recommendCoverage(profile: any, available: any[]): Promise<any> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet",
+      messages: [
+        {
+          role: "system",
+          content: "You are an insurance coverage advisor. Given a nonprofit organization's profile and available coverage products, recommend the best mix and explain the reasoning. Return strict JSON: { recommendedCoverages: [{ id, name, reason, priority }], gaps, costEstimateBand, notes }. Output ONLY valid JSON."
+        },
+        {
+          role: "user",
+          content: `Profile:\n${JSON.stringify(profile, null, 2)}\n\nAvailable Coverages:\n${JSON.stringify(available, null, 2)}`
+        }
+      ],
+      max_tokens: 900,
+    });
+    const text = response.choices[0].message.content || "{}";
+    try { return JSON.parse(text); } catch { return { rawAnalysis: text }; }
+  } catch (error) {
+    console.error("Coverage recommender error:", error);
+    throw new Error("Failed to recommend coverage: " + (error as Error).message);
+  }
+}

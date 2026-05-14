@@ -65,6 +65,7 @@ export default function Header() {
                 {navLink("/policies", "Policies")}
                 {navLink("/claims", "Claims")}
                 {navLink("/payment", "Payments")}
+                {navLink("/ai-tools", "AI Tools")}
               </nav>
 
               <div className="flex items-center space-x-4">

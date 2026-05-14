@@ -1,3 +1,14 @@
+// === Batch 11 Gaps & Frontend Mounts ===
+import GapClaimsPredictionPage from './pages/gap/GapClaimsPredictionPage'
+import GapCoverageRecommendationPage from './pages/gap/GapCoverageRecommendationPage'
+import GapClaimStatusChatbotPage from './pages/gap/GapClaimStatusChatbotPage'
+import GapClaimRiskScorerPage from './pages/gap/GapClaimRiskScorerPage'
+import GapPolicyDocManagementPage from './pages/gap/GapPolicyDocManagementPage'
+import GapMultiPolicyHolderPage from './pages/gap/GapMultiPolicyHolderPage'
+import GapRenewalTrackingPage from './pages/gap/GapRenewalTrackingPage'
+import GapComplianceAuditTrailPage from './pages/gap/GapComplianceAuditTrailPage'
+import GapProviderDirectoryPage from './pages/gap/GapProviderDirectoryPage'
+import GapBrokerPortalPage from './pages/gap/GapBrokerPortalPage'
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -24,6 +35,7 @@ import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
+import AITools from "@/pages/ai-tools";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -59,6 +71,18 @@ function Router() {
           <Route path="/contact" component={Contact} />
           <Route path="/financial-reports" component={FinancialReports} />
           <Route path="/consultation" component={Consultation} />
+          <Route path="/ai-tools" component={AITools} />
+          {/* === Batch 11 Gaps & Frontend Mounts === */}
+          <Route path="/gap/claims-prediction" component={GapClaimsPredictionPage} />
+          <Route path="/gap/coverage-recommendation" component={GapCoverageRecommendationPage} />
+          <Route path="/gap/claim-status-chatbot" component={GapClaimStatusChatbotPage} />
+          <Route path="/gap/claim-risk-scorer" component={GapClaimRiskScorerPage} />
+          <Route path="/gap/policy-doc-management" component={GapPolicyDocManagementPage} />
+          <Route path="/gap/multi-policy-holder" component={GapMultiPolicyHolderPage} />
+          <Route path="/gap/renewal-tracking" component={GapRenewalTrackingPage} />
+          <Route path="/gap/compliance-audit-trail" component={GapComplianceAuditTrailPage} />
+          <Route path="/gap/provider-directory" component={GapProviderDirectoryPage} />
+          <Route path="/gap/broker-portal" component={GapBrokerPortalPage} />
         </>
       )}
       <Route component={NotFound} />
