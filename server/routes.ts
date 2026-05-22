@@ -16,6 +16,7 @@ import {
   updateProfileSchema,
 } from "@shared/schema";
 import { analyzeDamageImages, claimsChatbot, assessRisk, recommendCoverage } from "./openai";
+import { registerExtraRoutes } from "./extraRoutes";
 import multer from "multer";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
@@ -1151,7 +1152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  require("./extraRoutes").registerExtraRoutes(app, isLocalAuthenticated);
+  registerExtraRoutes(app, isLocalAuthenticated);
   const httpServer = createServer(app);
   return httpServer;
 }
