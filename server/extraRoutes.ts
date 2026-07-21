@@ -5,10 +5,6 @@
 import type { Express, RequestHandler } from "express";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-});
 const MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-3-haiku";
 
 async function ask(systemPrompt: string, userPrompt: string, maxTokens = 1200): Promise<string> {
@@ -17,6 +13,10 @@ async function ask(systemPrompt: string, userPrompt: string, maxTokens = 1200): 
     e.status = 503;
     throw e;
   }
+  const openai = new OpenAI({
+    apiKey: process.env.OPENROUTER_API_KEY,
+    baseURL: "https://openrouter.ai/api/v1",
+  });
   const r = await openai.chat.completions.create({
     model: MODEL,
     messages: [

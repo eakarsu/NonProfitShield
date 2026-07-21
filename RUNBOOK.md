@@ -1,0 +1,11 @@
+# Authoritative nonprofit operations runbook
+
+Install from the lockfile, copy `.env.example`, provision PostgreSQL, and run `npm run migrate` with a migration-only database role. Migrations are explicit, transactional, and idempotent; application startup only checks that `nonprofit_organizations` exists. Docker runs the application as an unprivileged user and never initializes, migrates, or seeds a database.
+
+Provision the first local administrator explicitly with one-time `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` values and `npm run create-admin`, then unset both values. The command creates a missing verified administrator but never changes credentials or privileges on an existing account. Provision organizations and memberships out of band with least-privilege roles. The supported nonprofit API is `/api/nonprofit/v1`; every staff operation requires an authenticated user plus `x-organization-id`. Generated gap and direct-AI surfaces are not authoritative and return HTTP 410. Email verification and password-reset secrets are delivered out of band and are never returned by the API.
+
+Beneficiary data must remain in an approved vault and be referenced with `vault://`; only aliases, consent links, and provenance belong in workflow records. Consequential grant, program, and outcome transitions require an independently approved decision. Consent withdrawal stops queued communication tied to that consent. Offline events are device-sequenced, payload-hashed, and idempotent.
+
+Configure fundraising, accounting, and communications connectors independently. Alert on queue age, reconciliation mismatch, retry spikes, dead letters, approval age, consent withdrawal, offline sequence conflict, and audit-write failure. Repair the external system before replaying the same idempotency key. Run the bounded tenant-scoped retention purge only under the approved privacy schedule; immutable audit retention follows its separate legal policy.
+
+Before launch, rehearse migrations and restore, validate provider schemas and webhook signatures, exercise offline conflict/recovery and intended-volume load, approve retention and consent language, and assign integration/reconciliation ownership. Repository tests do not establish provider acceptance, legal compliance, beneficiary safety, or production recovery.

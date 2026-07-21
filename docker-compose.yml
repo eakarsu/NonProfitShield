@@ -1,51 +1,35 @@
-version: '3.8'
-
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     environment:
-      POSTGRES_DB: insurance_platform
-      POSTGRES_USER: insurance_user
-      POSTGRES_PASSWORD: insurance_password
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
-    ports:
-      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U insurance_user -d insurance_platform"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   app:
     build: .
     ports:
-      - "5000:5000"
+      - "${PORT:-5000}:5000"
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://insurance_user:insurance_password@postgres:5432/insurance_platform
-      - PGHOST=postgres
-      - PGPORT=5432
-      - PGUSER=insurance_user
-      - PGPASSWORD=insurance_password
-      - PGDATABASE=insurance_platform
-      - SESSION_SECRET=your-secure-session-secret-here
-      - REPL_ID=insurance-platform
-      - REPLIT_DOMAINS=localhost
-      - ISSUER_URL=https://replit.com/oidc
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      NONPROFIT_WEBHOOK_SECRET: ${NONPROFIT_WEBHOOK_SECRET:?set NONPROFIT_WEBHOOK_SECRET}
+      REPL_ID: ${REPL_ID:-}
+      REPLIT_DOMAINS: ${REPLIT_DOMAINS:-}
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./uploads:/app/uploads
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    restart: unless-stopped
 
 volumes:
   postgres_data:
-  uploads:

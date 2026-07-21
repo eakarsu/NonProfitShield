@@ -1,10 +1,13 @@
 import OpenAI from "openai";
 
-// Using OpenRouter API for AI model access
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-});
+// OpenRouter is optional at startup. Resolve it only for an explicitly invoked
+// legacy AI operation so health, authentication, and authoritative workflows
+// remain available without silently fabricating provider output.
+function openAIClient(): OpenAI {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY is required for this AI operation");
+  return new OpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" });
+}
 
 export interface DamageAssessment {
   damageType: string;
@@ -63,7 +66,7 @@ export async function analyzeDamageImages(base64Images: string[]): Promise<Damag
       }
     ];
 
-    const response = await openai.chat.completions.create({
+    const response = await openAIClient().chat.completions.create({
       model: "anthropic/claude-3.5-sonnet",
       messages,
       response_format: { type: "json_object" },
@@ -103,7 +106,7 @@ export async function analyzeDamageImages(base64Images: string[]): Promise<Damag
 
 export async function generateClaimSummary(claim: any): Promise<string> {
   try {
-    const response = await openai.chat.completions.create({
+    const response = await openAIClient().chat.completions.create({
       model: "anthropic/claude-3.5-sonnet",
       messages: [
         {
@@ -133,7 +136,7 @@ export async function generateClaimSummary(claim: any): Promise<string> {
 
 export async function claimsChatbot(question: string, context?: any): Promise<string> {
   try {
-    const response = await openai.chat.completions.create({
+    const response = await openAIClient().chat.completions.create({
       model: process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet",
       messages: [
         {
@@ -156,7 +159,7 @@ export async function claimsChatbot(question: string, context?: any): Promise<st
 
 export async function assessRisk(intake: any): Promise<any> {
   try {
-    const response = await openai.chat.completions.create({
+    const response = await openAIClient().chat.completions.create({
       model: process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet",
       messages: [
         {
@@ -180,7 +183,7 @@ export async function assessRisk(intake: any): Promise<any> {
 
 export async function recommendCoverage(profile: any, available: any[]): Promise<any> {
   try {
-    const response = await openai.chat.completions.create({
+    const response = await openAIClient().chat.completions.create({
       model: process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet",
       messages: [
         {

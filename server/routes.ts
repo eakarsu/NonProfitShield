@@ -74,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Security headers
   app.use(
     helmet({
-      contentSecurityPolicy: false, // Allow inline scripts for dev
+      contentSecurityPolicy: process.env.NODE_ENV === "production" ? undefined : false,
       crossOriginEmbedderPolicy: false,
     })
   );
@@ -140,17 +140,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emailVerificationToken: verificationToken,
       });
 
-      // Set session
-      req.session.userId = user.id;
-
-      res.json({
+      res.status(201).json({
         id: user.id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
         emailVerified: user.emailVerified,
-        verificationToken, // In production, send this via email
+        verification: "out_of_band",
       });
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -170,6 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user || !user.password) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
+      if (!user.emailVerified) return res.status(403).json({ message: "Email verification required" });
 
       const validPassword = await bcrypt.compare(data.password, user.password);
       if (!validPassword) {
@@ -241,10 +239,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         passwordResetExpires: resetExpires,
       });
 
-      // In production, send email with reset link
       res.json({
         message: "If an account exists with that email, a reset link has been sent",
-        resetToken, // Only returned for development/testing
+        delivery: "out_of_band",
       });
     } catch (error: any) {
       console.error("Forgot password error:", error);
@@ -309,7 +306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AUTH USER ROUTE
   // ==========================================
 
-  app.get("/api/auth/user", isLocalAuthenticated, async (req: any, res) => {
+  app.get(["/api/auth/user", "/api/auth/me"], isLocalAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       if (!userId) return res.status(401).json({ message: "Unauthorized" });

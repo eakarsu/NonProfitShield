@@ -1,0 +1,32 @@
+name: authoritative-contracts
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: nonprofit_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d nonprofit_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nonprofit_test
+      RUN_DATABASE_TESTS: "true"
+      SESSION_SECRET: test-session-secret-at-least-32-characters
+      NONPROFIT_WEBHOOK_SECRET: test-webhook-secret-at-least-32-characters
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run migrate
+      - run: npm run migrate
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
