@@ -2,11 +2,17 @@ import { db } from "./db";
 import { users, policies, claims, payments } from "@shared/schema";
 import bcrypt from "bcryptjs";
 
+function requireDemoPassword() {
+  const password = process.env.DEMO_PASSWORD || process.env.SEED_DEMO_PASSWORD || process.env.DEMO_SEED_PASSWORD || '';
+  if (password.length < 12 || password.length > 1024) throw new Error('DEMO_PASSWORD must contain 12-1024 characters');
+  return password;
+}
+
 export async function seedDatabase() {
   console.log("Seeding database...");
 
   // Hash password for all seed users
-  const hashedPassword = await bcrypt.hash("Password1!", 12);
+  const hashedPassword = await bcrypt.hash(requireDemoPassword(), 12);
 
   // ==========================================
   // SEED USERS (18 users with different roles)
