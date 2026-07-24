@@ -20,7 +20,7 @@ export default function Login() {
   const { toast } = useToast();
 
   const {
-    register,
+    register, setValue,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginForm>({
@@ -74,6 +74,15 @@ export default function Login() {
               </Link>
             </div>
 
+            <button
+              type="button"
+              onClick={() => { setValue('email', import.meta.env.VITE_DEMO_EMAIL || ''); setValue('password', import.meta.env.VITE_DEMO_PASSWORD || ''); }}
+              disabled={!import.meta.env.VITE_DEMO_EMAIL || !import.meta.env.VITE_DEMO_PASSWORD}
+              aria-label="Auto Fill Demo Credentials"
+              style={{ width: '100%', marginBottom: '12px', padding: '10px 14px', borderRadius: '8px', border: '1px solid currentColor', background: 'transparent', cursor: 'pointer' }}
+            >
+              Auto Fill Demo Credentials
+            </button>
             <Button
               type="submit"
               className="w-full bg-primary-500 hover:bg-primary-600"
