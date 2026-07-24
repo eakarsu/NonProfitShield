@@ -1,46 +1,21 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
+PROJECT_DIR="$(cd "$(dirname "$0")"&&pwd)";ENV_FILE="$PROJECT_DIR/.env"
+load_env_file(){ local line key value;while IFS= read -r line||[ -n "$line" ];do [[ "$line" =~ ^[[:space:]]*# || "$line" =~ ^[[:space:]]*$ ]]&&continue;line="${line#export }";key="${line%%=*}";value="${line#*=}";key="${key//[[:space:]]/}";[[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]||continue;[ -n "${!key+x}" ]&&continue;if [[ "$value" == \"*\" && "$value" == *\" ]];then value="${value:1:${#value}-2}";elif [[ "$value" == \'*\' && "$value" == *\' ]];then value="${value:1:${#value}-2}";fi;export "$key=$value";done < "$ENV_FILE"; }
+[ -f "$ENV_FILE" ]||{ echo "Missing required file: $ENV_FILE" >&2;exit 1; };load_env_file
+: "${BACKEND_PORT:?BACKEND_PORT is required}";: "${FRONTEND_PORT:?FRONTEND_PORT is required}";: "${DATABASE_URL:?DATABASE_URL is required}"
+: "${OPENROUTER_API_KEY:?OPENROUTER_API_KEY is required}";: "${OPENROUTER_MODEL:?OPENROUTER_MODEL is required}";: "${OPENROUTER_BASE_URL:?OPENROUTER_BASE_URL is required}"
+for assigned_port in "$BACKEND_PORT" "$FRONTEND_PORT";do lsof -nP -iTCP:"$assigned_port" -sTCP:LISTEN >/dev/null 2>&1&&{ echo "Assigned port $assigned_port is occupied" >&2;exit 1; };done
 
-project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$project_dir"
-
-if ! command -v node >/dev/null 2>&1; then
-  printf 'Node.js 20 or newer is required.\n' >&2
-  exit 1
-fi
-
-node_major="$(node -p 'Number(process.versions.node.split(".")[0])')"
-if [ "$node_major" -lt 20 ]; then
-  printf 'Node.js 20 or newer is required.\n' >&2
-  exit 1
-fi
-
-runtime_port="${PORT:-5000}"
-if [[ ! "$runtime_port" =~ ^[0-9]+$ ]] || [ "$runtime_port" -lt 1 ] || [ "$runtime_port" -gt 65535 ]; then
-  printf 'PORT must be an integer between 1 and 65535.\n' >&2
-  exit 1
-fi
-
-if [ -z "${DATABASE_URL:-}" ]; then
-  printf 'DATABASE_URL is required; provision and migrate PostgreSQL before startup.\n' >&2
-  exit 1
-fi
-session_secret="${SESSION_SECRET:-}"
-if [ "${#session_secret}" -lt 32 ]; then
-  printf 'SESSION_SECRET must be at least 32 characters.\n' >&2
-  exit 1
-fi
-
-export PORT="$runtime_port"
-export NODE_ENV="${NODE_ENV:-development}"
-
-if [ "$NODE_ENV" = production ]; then
-  if [ ! -f dist/index.js ]; then
-    printf 'Production build missing; run npm run build before startup.\n' >&2
-    exit 1
-  fi
-  exec node dist/index.js
-fi
-
-exec node --import tsx server/index.ts
+[ -d "$PROJECT_DIR/node_modules" ]||{ echo "Dependencies missing" >&2;exit 1; }
+export NODE_ENV=development PORT="$FRONTEND_PORT"
+export RUNTIME_PROJECT_NAME=NonProfitShield RUNTIME_AI_ENDPOINT=/api/ai/nonprofit-guidance RUNTIME_AI_FEATURE=nonprofit-guidance
+export RUNTIME_AI_SYSTEM_PROMPT='You are a nonprofit risk and program-operations assistant. Give cautious, evidence-aware guidance and identify missing facts without making eligibility or legal decisions.'
+node "$PROJECT_DIR/runtime/setup.mjs"
+(cd "$PROJECT_DIR"&&exec node --import tsx server/scripts/migrate.ts)
+CHILD_PIDS=()
+(cd "$PROJECT_DIR"&&exec node runtime/api.mjs)&CHILD_PIDS+=("$!")
+(cd "$PROJECT_DIR"&&PORT="$FRONTEND_PORT" exec node --import tsx server/index.ts)&CHILD_PIDS+=("$!")
+cleanup(){ trap - EXIT INT TERM;for pid in "${CHILD_PIDS[@]}";do kill "$pid" 2>/dev/null||true;done;for pid in "${CHILD_PIDS[@]}";do wait "$pid" 2>/dev/null||true;done; }
+trap cleanup EXIT INT TERM
+wait "${CHILD_PIDS[@]}"
