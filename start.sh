@@ -88,6 +88,9 @@ export RUNTIME_PROJECT_NAME=NonProfitShield RUNTIME_AI_ENDPOINT=/api/ai/nonprofi
 export RUNTIME_AI_SYSTEM_PROMPT='You are a nonprofit risk and program-operations assistant. Give cautious, evidence-aware guidance and identify missing facts without making eligibility or legal decisions.'
 node "$PROJECT_DIR/runtime/setup.mjs"
 (cd "$PROJECT_DIR"&&exec node --import tsx server/scripts/migrate.ts)
+if [ "${BOOTSTRAP_ACKNOWLEDGEMENT:-}" = create-initial-admin ]; then
+  (cd "$PROJECT_DIR" && npm run create-admin)
+fi
 CHILD_PIDS=()
 (cd "$PROJECT_DIR"&&exec node runtime/api.mjs)&CHILD_PIDS+=("$!")
 (cd "$PROJECT_DIR"&&PORT="$FRONTEND_PORT" exec node --import tsx server/index.ts)&CHILD_PIDS+=("$!")
