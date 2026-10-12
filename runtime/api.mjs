@@ -1,3 +1,4 @@
+import { createNonprofitAdvisoryHandler } from './native-advisory.mjs';
 import http from 'node:http';
 import crypto from 'node:crypto';
 import { literal, query } from './db.mjs';
@@ -13,10 +14,12 @@ const readBody=req=>new Promise((resolve,reject)=>{let text='';req.on('data',chu
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 function verify(password,stored){const [kind,salt,digest]=String(stored).split('$');if(kind!=='scrypt'||!salt||!digest)return false;const candidate=crypto.scryptSync(password,salt,32);const expected=Buffer.from(digest,'hex');return candidate.length===expected.length&&crypto.timingSafeEqual(candidate,expected);}
 function actor(req){const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');if(!token)return null;const row=query(`SELECT u.id,u.email,u.display_name,u.role FROM runtime_app_sessions s JOIN runtime_app_users u ON u.id=s.user_id WHERE s.token_hash=${literal(sha(token))} AND s.expires_at>NOW() AND u.active=TRUE LIMIT 1`,{rows:true});if(!row)return null;const [id,email,displayName,role]=row.split('\t');return{id,email,displayName,role};}
+const advisoryHandler=createNonprofitAdvisoryHandler();
 const server=http.createServer(async(req,res)=>{
   if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Origin':frontendOrigin,'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET,POST,OPTIONS'});return res.end();}
   const url=new URL(req.url||'/',`http://127.0.0.1:${port}`);
   try{
+    if(await advisoryHandler(req,res,url))return;
     if(req.method==='GET'&&url.pathname==='/api/health')return json(res,200,{status:'ok',project});
     if(req.method==='POST'&&url.pathname==='/api/auth/login'){
       const body=await readBody(req);const email=String(body.email||'').trim().toLowerCase();const password=String(body.password||'');
@@ -31,16 +34,6 @@ const server=http.createServer(async(req,res)=>{
       const user=actor(req);if(!user)return json(res,401,{error:'Authentication required'});
       const rows=query(`SELECT json_build_object('id',id,'feature',feature,'input',input,'output',output,'model',model,'createdAt',created_at)::text FROM runtime_ai_interactions WHERE user_id=${literal(user.id)}::uuid ORDER BY created_at DESC LIMIT 50`,{rows:true});
       return json(res,200,{history:rows?rows.split('\n').map(JSON.parse):[]});
-    }
-    if(req.method==='POST'&&url.pathname===selectedEndpoint){
-      const user=actor(req);if(!user)return json(res,401,{error:'Authentication required'});
-      const body=await readBody(req);const prompt=String(body.prompt||body.question||body.message||body.context||'').trim();if(!prompt)return json(res,400,{error:'prompt is required'});
-      const base=String(process.env.OPENROUTER_BASE_URL||'').replace(/\/+$/,'');const model=String(process.env.OPENROUTER_MODEL||'').trim();const key=String(process.env.OPENROUTER_API_KEY||'').trim();
-      if(base!=='https://openrouter.ai/api/v1'||!model||!key)throw new Error('Exact OpenRouter configuration is required');
-      const response=await fetch(`${base}/chat/completions`,{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json','X-Title':project},body:JSON.stringify({model,messages:[{role:'system',content:systemPrompt},{role:'user',content:prompt}],max_tokens:650})});
-      if(!response.ok)throw new Error(`OpenRouter API error (${response.status})`);const provider=await response.json();const content=String(provider.choices?.[0]?.message?.content||'').trim();if(!content)throw new Error('OpenRouter returned an empty response');
-      const saved=query(`INSERT INTO runtime_ai_interactions(user_id,feature,input,output,model) VALUES(${literal(user.id)}::uuid,${literal(feature)},${literal(JSON.stringify(body))}::jsonb,${literal(JSON.stringify({content}))}::jsonb,${literal(model)}) RETURNING id`,{rows:true});
-      return json(res,200,{content,model,interactionId:Number(saved),feature});
     }
     return json(res,404,{error:'Not found'});
   }catch(error){console.error(error.message);return json(res,500,{error:'Internal service error'});}

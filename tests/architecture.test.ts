@@ -30,3 +30,26 @@ test("auth secrets fail closed and tokens are out-of-band", () => {
   assert.doesNotMatch(routes, /verificationToken,\s*\/\/ In production/);
   assert.doesNotMatch(routes, /resetToken,\s*\/\/ Only returned/);
 });
+
+test("one-click demo auth is server-side and keeps credentials out of the client bundle", () => {
+  const routes = read("server/routes.ts");
+  const login = read("client/src/pages/login.tsx");
+  assert.match(routes, /app\.post\("\/api\/auth\/demo"/);
+  assert.match(routes, /DEMO_LOGIN_PASSWORD \|\| process\.env\.PROVISION_ADMIN_PASSWORD/);
+  assert.match(login, /apiRequest\("POST", "\/api\/auth\/demo"\)/);
+  assert.doesNotMatch(login, /VITE_DEMO_(EMAIL|PASSWORD)/);
+});
+
+test("draft policies cannot cross the claim submission gate", () => {
+  const submission = read("server/claim-submission.ts");
+  assert.match(submission, /policy\.status !== "active"/);
+  assert.match(submission, /require authorized active coverage/);
+});
+
+test("native lists show fifteen rows and record actions stay centered", () => {
+  assert.match(read("client/src/pages/policies.tsx"), /useState\(15\)/);
+  assert.match(read("client/src/pages/claims.tsx"), /useState\(15\)/);
+  assert.match(read("client/src/components/ui/data-table.tsx"), /SelectItem value="15"/);
+  assert.match(read("client/src/components/ui/row-detail-dialog.tsx"), /justify-center gap-3/);
+  assert.match(read("client/src/components/native-advisory.css"), /\.na-dialog-inner>footer\{[^}]*justify-content:center/);
+});

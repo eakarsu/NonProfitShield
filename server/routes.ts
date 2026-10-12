@@ -15,7 +15,8 @@ import {
   resetPasswordSchema,
   updateProfileSchema,
 } from "@shared/schema";
-import { analyzeDamageImages, claimsChatbot, assessRisk, recommendCoverage } from "./openai";
+import { claimsChatbot, assessRisk, recommendCoverage } from "./openai";
+import { createClaimSubmissionHandler, createClaimRecordMutationHandler } from "./claim-submission";
 import { registerExtraRoutes } from "./extraRoutes";
 import multer from "multer";
 import bcrypt from "bcryptjs";
@@ -155,6 +156,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Validation failed", errors: error.issues });
       }
       res.status(400).json({ message: error.message || "Registration failed" });
+    }
+  });
+
+  // Demo login keeps configured credentials server-side and creates the same native session as manual login.
+  app.post("/api/auth/demo", authLimiter, async (req: any, res) => {
+    try {
+      const configuredPairs = [
+        [process.env.DEMO_LOGIN_EMAIL, process.env.DEMO_LOGIN_PASSWORD],
+        [process.env.PROVISION_ADMIN_EMAIL, process.env.PROVISION_ADMIN_PASSWORD],
+        [process.env.BOOTSTRAP_ADMIN_EMAIL, process.env.BOOTSTRAP_ADMIN_PASSWORD],
+        [process.env.SEED_ADMIN_EMAIL, process.env.SEED_ADMIN_PASSWORD],
+        [process.env.SEED_USER_EMAIL, process.env.SEED_USER_PASSWORD],
+        [process.env.DEMO_EMAIL, process.env.DEMO_PASSWORD],
+        [process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD],
+        [process.env.DEFAULT_EMAIL, process.env.DEFAULT_PASSWORD],
+      ];
+      const [configuredEmail, configuredPassword] = configuredPairs.find(([candidateEmail, candidatePassword]) => candidateEmail?.trim() && candidatePassword) || [];
+      const email = (configuredEmail || "").trim();
+      const password = configuredPassword || "";
+      if (!email || !password) {
+        return res.status(503).json({ message: "Demo workspace is not configured" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user?.password || !user.emailVerified || !(await bcrypt.compare(password, user.password))) {
+        return res.status(503).json({ message: "Demo workspace is unavailable" });
+      }
+
+      req.session.userId = user.id;
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        emailVerified: user.emailVerified,
+        profileImageUrl: user.profileImageUrl,
+      });
+    } catch (error) {
+      console.error("Demo login error:", error);
+      res.status(500).json({ message: "Demo login failed" });
     }
   });
 
@@ -463,7 +505,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Policy not found" });
       }
 
-      const updated = await storage.updatePolicy(policyId, req.body);
+      const requestedStatus = req.body?.status;
+      if (Object.keys(req.body || {}).some((key) => key !== "status") || !["training_draft", "active", "suspended", "cancelled"].includes(requestedStatus)) {
+        return res.status(400).json({ message: "Edit only a supported policy status" });
+      }
+      if (policy.status === "training_draft" && requestedStatus !== "training_draft") {
+        return res.status(403).json({ message: "Fictional training policies cannot be activated, suspended, or presented as coverage" });
+      }
+      if (policy.status !== "training_draft" && requestedStatus === "training_draft") {
+        return res.status(403).json({ message: "Existing policy records cannot be converted into training fixtures" });
+      }
+
+      const updated = await storage.updatePolicy(policyId, { status: requestedStatus });
       res.json(updated);
     } catch (error) {
       console.error("Error updating policy:", error);
@@ -495,47 +548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // CLAIM ROUTES (with pagination, search, filter, sort)
   // ==========================================
 
-  app.post("/api/claims", isLocalAuthenticated, upload.array("images", 10), async (req: any, res) => {
-    try {
-      const userId = getUserId(req);
-      if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
-      const files = req.files as Express.Multer.File[];
-
-      if (!files || files.length === 0) {
-        return res.status(400).json({ message: "At least one image is required" });
-      }
-
-      const base64Images = files.map((file) => file.buffer.toString("base64"));
-
-      let aiAssessment;
-      try {
-        aiAssessment = await analyzeDamageImages(base64Images);
-      } catch (error) {
-        console.error("AI analysis failed:", error);
-        aiAssessment = null;
-      }
-
-      const imageUrls = files.map((_, index) => `data:image/jpeg;base64,${base64Images[index]}`);
-
-      const claimData = {
-        userId,
-        policyId: parseInt(req.body.policyId),
-        title: req.body.title,
-        description: req.body.description,
-        incidentDate: new Date(req.body.incidentDate),
-        images: imageUrls,
-        aiAssessment,
-        estimatedAmount: aiAssessment ? aiAssessment.estimatedCost.total.toString() : "0",
-      };
-
-      const claim = await storage.createClaim(claimData);
-      res.json(claim);
-    } catch (error) {
-      console.error("Error creating claim:", error);
-      res.status(400).json({ message: "Failed to create claim" });
-    }
-  });
+  app.post("/api/claims", isLocalAuthenticated, upload.array("images", 10), createClaimSubmissionHandler());
 
   app.get("/api/claims", isLocalAuthenticated, async (req: any, res) => {
     try {
@@ -575,45 +588,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/claims/:id", isLocalAuthenticated, async (req: any, res) => {
-    try {
-      const userId = getUserId(req);
-      if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
-      const claimId = parseInt(req.params.id);
-      const claim = await storage.getClaim(claimId);
-
-      if (!claim || claim.userId !== userId) {
-        return res.status(404).json({ message: "Claim not found" });
-      }
-
-      const updatedClaim = await storage.updateClaim(claimId, req.body);
-      res.json(updatedClaim);
-    } catch (error) {
-      console.error("Error updating claim:", error);
-      res.status(500).json({ message: "Failed to update claim" });
-    }
-  });
-
-  app.delete("/api/claims/:id", isLocalAuthenticated, async (req: any, res) => {
-    try {
-      const userId = getUserId(req);
-      if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
-      const claimId = parseInt(req.params.id);
-      const claim = await storage.getClaim(claimId);
-
-      if (!claim || claim.userId !== userId) {
-        return res.status(404).json({ message: "Claim not found" });
-      }
-
-      await storage.deleteClaims([claimId]);
-      res.json({ message: "Claim deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting claim:", error);
-      res.status(500).json({ message: "Failed to delete claim" });
-    }
-  });
+  app.patch("/api/claims/:id", isLocalAuthenticated, createClaimRecordMutationHandler());
+  app.delete("/api/claims/:id", isLocalAuthenticated, createClaimRecordMutationHandler({ operation: "delete" }));
 
   // ==========================================
   // PAYMENT ROUTES (with pagination, search, filter, sort)
@@ -765,35 +741,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/bulk/claims/delete", isLocalAuthenticated, async (req: any, res) => {
-    try {
-      const { ids } = req.body;
-      if (!Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ message: "No IDs provided" });
-      }
-
-      const count = await storage.deleteClaims(ids);
-      res.json({ message: `${count} claims deleted`, count });
-    } catch (error) {
-      console.error("Error bulk deleting claims:", error);
-      res.status(500).json({ message: "Failed to bulk delete claims" });
-    }
-  });
-
-  app.post("/api/bulk/claims/update", isLocalAuthenticated, async (req: any, res) => {
-    try {
-      const { ids, updates } = req.body;
-      if (!Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ message: "No IDs provided" });
-      }
-
-      const result = await storage.bulkUpdateClaims(ids, updates);
-      res.json({ message: `${result.length} claims updated`, data: result });
-    } catch (error) {
-      console.error("Error bulk updating claims:", error);
-      res.status(500).json({ message: "Failed to bulk update claims" });
-    }
-  });
+  app.post("/api/bulk/claims/delete", isLocalAuthenticated, createClaimRecordMutationHandler({ operation: "delete", bulk: true }));
+  app.post("/api/bulk/claims/update", isLocalAuthenticated, createClaimRecordMutationHandler({ bulk: true }));
 
   app.post("/api/bulk/payments/delete", isLocalAuthenticated, async (req: any, res) => {
     try {
@@ -1075,8 +1024,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const policies = await storage.getUserPolicies(userId);
       const claims = await storage.getUserClaims(userId);
+      const activePolicies = policies.filter((policy) => policy.status === "active");
 
-      const totalCoverage = policies.reduce(
+      const totalCoverage = activePolicies.reduce(
         (sum, policy) => sum + parseFloat(policy.coverageAmount),
         0
       );
@@ -1086,15 +1036,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       const nextPremium =
-        policies.length > 0
-          ? Math.min(...policies.map((p) => parseFloat(p.monthlyPremium)))
+        activePolicies.length > 0
+          ? Math.min(...activePolicies.map((p) => parseFloat(p.monthlyPremium)))
           : 0;
 
       res.json({
         totalCoverage,
         activeClaims: activeClaims.length,
         nextPremium,
-        totalPolicies: policies.length,
+        totalPolicies: activePolicies.length,
         totalClaims: claims.length,
       });
     } catch (error) {

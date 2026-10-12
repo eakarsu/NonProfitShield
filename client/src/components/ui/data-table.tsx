@@ -57,6 +57,8 @@ interface DataTableProps<T> {
   onExportPdf?: () => void;
   idKey?: string;
   isLoading?: boolean;
+  errorMessage?: string;
+  onRetry?: () => void;
 }
 
 export default function DataTable<T extends Record<string, any>>({
@@ -83,6 +85,8 @@ export default function DataTable<T extends Record<string, any>>({
   onExportPdf,
   idKey = "id",
   isLoading,
+  errorMessage,
+  onRetry,
 }: DataTableProps<T>) {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -244,7 +248,16 @@ export default function DataTable<T extends Record<string, any>>({
               </tr>
             </thead>
             <tbody>
-              {isLoading ? (
+              {errorMessage ? (
+                <tr>
+                  <td colSpan={columns.length + (onBulkDelete || onBulkUpdate ? 1 : 0)} className="px-4 py-12 text-center">
+                    <div role="alert" className="mx-auto max-w-xl rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                      <p>{errorMessage}</p>
+                      {onRetry && <Button type="button" variant="outline" size="sm" className="mt-3" onClick={onRetry}>Retry</Button>}
+                    </div>
+                  </td>
+                </tr>
+              ) : isLoading ? (
                 Array.from({ length: limit }).map((_, i) => (
                   <tr key={i} className="border-b">
                     {(onBulkDelete || onBulkUpdate) && (
@@ -322,6 +335,7 @@ export default function DataTable<T extends Record<string, any>>({
             <SelectContent>
               <SelectItem value="5">5</SelectItem>
               <SelectItem value="10">10</SelectItem>
+              <SelectItem value="15">15</SelectItem>
               <SelectItem value="25">25</SelectItem>
               <SelectItem value="50">50</SelectItem>
             </SelectContent>

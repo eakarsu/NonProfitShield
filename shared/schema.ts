@@ -155,10 +155,20 @@ export const homeInsuranceSchema = z.object({
   }),
 });
 
-export const claimSubmissionSchema = insertClaimSchema.extend({
-  incidentDate: z.string().min(1, "Incident date is required"),
-  images: z.array(z.string()).min(1, "At least one image is required"),
+export const claimSubmissionSchema = z.object({
+  policyId: z.coerce.number().int().positive("Choose a policy"),
+  title: z.string().trim().min(1, "Claim title is required").max(200),
+  description: z.string().trim().min(1, "Description is required").max(15000),
+  incidentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Incident date is required").refine((value) => {
+    const date = new Date(`${value}T00:00:00Z`);
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  }, "Enter a valid incident date"),
+  images: z.array(z.string().min(1)).min(1, "At least one image is required").max(10),
 });
+
+export const claimMetadataEditSchema = claimSubmissionSchema.pick({
+  title: true, description: true, incidentDate: true,
+}).partial().strict().refine((value) => Object.keys(value).length > 0, "Supply at least one editable claim field");
 
 // Registration schema with password strength validation
 export const registerSchema = z.object({

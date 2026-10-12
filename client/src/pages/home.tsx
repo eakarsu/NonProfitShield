@@ -13,21 +13,21 @@ export default function HomePage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
 
-  const { data: stats, isLoading: statsLoading } = useQuery<any>({
+  const { data: stats, isLoading: statsLoading, error: statsError, refetch: retryStats } = useQuery<any>({
     queryKey: ["/api/dashboard/stats"],
   });
 
-  const { data: policies, isLoading: policiesLoading } = useQuery<any>({
+  const { data: policies, isLoading: policiesLoading, error: policiesError, refetch: retryPolicies } = useQuery<any>({
     queryKey: ["/api/policies"],
   });
 
-  const { data: claimsData, isLoading: claimsLoading } = useQuery<any>({
+  const { data: claimsData, isLoading: claimsLoading, error: claimsError, refetch: retryClaims } = useQuery<any>({
     queryKey: ["/api/claims"],
   });
 
-  const claims = Array.isArray(claimsData) ? claimsData : claimsData?.data || [];
+  const claims = Array.isArray(claimsData) ? claimsData : Array.isArray(claimsData?.data) ? claimsData.data : [];
   const recentClaims = claims.slice(0, 3);
-  const policyList = Array.isArray(policies) ? policies : policies?.data || [];
+  const policyList = Array.isArray(policies) ? policies : Array.isArray(policies?.data) ? policies.data : [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -44,6 +44,7 @@ export default function HomePage() {
   };
 
   const isLoading = statsLoading || policiesLoading || claimsLoading;
+  const loadError = statsError || policiesError || claimsError;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -72,7 +73,12 @@ export default function HomePage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isLoading ? (
+        {loadError ? (
+          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-5 text-red-800">
+            <p>{loadError instanceof Error ? loadError.message : "Dashboard records could not be loaded."}</p>
+            <Button type="button" variant="outline" className="mt-3" onClick={() => { void retryStats(); void retryPolicies(); void retryClaims(); }}>Retry</Button>
+          </div>
+        ) : isLoading ? (
           <DashboardSkeleton />
         ) : (
           <>
@@ -236,7 +242,7 @@ export default function HomePage() {
             {/* Coverage Overview - Clickable cards */}
             <div className="mt-8">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-900">Your Coverage</h3>
+                <h3 className="text-lg font-semibold text-slate-900">Saved policy records</h3>
                 <Link href="/policies">
                   <Button variant="ghost" size="sm">
                     View All

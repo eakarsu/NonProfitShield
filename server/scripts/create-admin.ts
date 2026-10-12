@@ -13,15 +13,15 @@ if (password.length < 12) {
 }
 
 try {
-  const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
-  const passwordHash = await bcrypt.hash(password, 12);
+  const existing = await pool.query("SELECT id,password,role,email_verified FROM users WHERE email = $1", [email]);
   if (existing.rowCount) {
-    await pool.query(
-      "UPDATE users SET password = $2, role = 'admin', email_verified = TRUE, updated_at = NOW() WHERE email = $1",
-      [email, passwordHash],
-    );
-    console.log("bootstrap administrator reconciled");
+    const account = existing.rows[0];
+    if (!account.password || !(await bcrypt.compare(password, account.password))) {
+      throw new Error("bootstrap administrator exists with different credentials; refusing to overwrite it");
+    }
+    console.log("bootstrap administrator already exists; account preserved");
   } else {
+    const passwordHash = await bcrypt.hash(password, 12);
     await pool.query(
       `INSERT INTO users
          (id, email, first_name, last_name, password, role, email_verified, created_at, updated_at)

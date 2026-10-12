@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 
 const statusColors: Record<string, string> = {
+  training_draft: "bg-slate-100 text-slate-800",
   active: "bg-green-100 text-green-800",
   suspended: "bg-yellow-100 text-yellow-800",
   cancelled: "bg-red-100 text-red-800",
@@ -35,7 +36,7 @@ const statusColors: Record<string, string> = {
 export default function Policies() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(15);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -53,7 +54,7 @@ export default function Policies() {
     ...(Object.keys(filters).length > 0 && { filter: JSON.stringify(filters) }),
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error: policiesError, refetch: retryPolicies } = useQuery({
     queryKey: ["/api/policies", queryParams.toString()],
     queryFn: async () => {
       const res = await fetch(`/api/policies?${queryParams}`, { credentials: "include" });
@@ -118,7 +119,7 @@ export default function Policies() {
       sortable: true,
       render: (item) => (
         <Badge className={statusColors[item.status] || "bg-slate-100 text-slate-800"}>
-          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+          {item.status.replaceAll("_", " ").replace(/^./, (letter: string) => letter.toUpperCase())}
         </Badge>
       ),
     },
@@ -155,6 +156,7 @@ export default function Policies() {
       key: "status",
       label: "Status",
       options: [
+        { value: "training_draft", label: "Training draft" },
         { value: "active", label: "Active" },
         { value: "suspended", label: "Suspended" },
         { value: "cancelled", label: "Cancelled" },
@@ -170,9 +172,10 @@ export default function Policies() {
     window.open("/api/export/policies/pdf", "_blank");
   };
 
-  const tableData = data?.data || data || [];
-  const total = data?.total || tableData.length;
-  const totalPages = data?.totalPages || Math.ceil(total / limit);
+  const tableData = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+  const invalidPayload = !!data && !Array.isArray(data) && !Array.isArray(data?.data);
+  const total = typeof data?.total === "number" ? data.total : tableData.length;
+  const totalPages = typeof data?.totalPages === "number" ? data.totalPages : Math.ceil(total / limit);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -222,6 +225,8 @@ export default function Policies() {
           onExportCsv={handleExportCsv}
           onExportPdf={handleExportPdf}
           isLoading={isLoading}
+          errorMessage={policiesError instanceof Error ? policiesError.message : policiesError ? "Policies could not be loaded." : invalidPayload ? "Policies returned an invalid response." : undefined}
+          onRetry={() => void retryPolicies()}
         />
       </div>
 
@@ -233,7 +238,7 @@ export default function Policies() {
           title={`${selectedPolicy.type.charAt(0).toUpperCase() + selectedPolicy.type.slice(1)} Insurance`}
           subtitle={`Policy #${selectedPolicy.id}`}
           badge={{
-            label: selectedPolicy.status.charAt(0).toUpperCase() + selectedPolicy.status.slice(1),
+            label: selectedPolicy.status.replaceAll("_", " ").replace(/^./, (letter: string) => letter.toUpperCase()),
             className: statusColors[selectedPolicy.status] || "bg-slate-100 text-slate-800",
           }}
           fields={[
@@ -282,9 +287,15 @@ export default function Policies() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  {editingPolicy?.status === "training_draft" ? (
+                    <SelectItem value="training_draft">Training draft — cannot represent coverage</SelectItem>
+                  ) : (
+                    <>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="suspended">Suspended</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>

@@ -15,11 +15,11 @@ export default function Payment() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: policies } = useQuery<any>({
+  const { data: policies, isLoading: policiesLoading, error: policiesError, refetch: retryPolicies } = useQuery<any>({
     queryKey: ["/api/policies"],
   });
 
-  const { data: payments } = useQuery<any>({
+  const { data: payments, isLoading: paymentsLoading, error: paymentsError, refetch: retryPayments } = useQuery<any>({
     queryKey: ["/api/payments"],
   });
 
@@ -81,8 +81,18 @@ export default function Payment() {
     }
   };
 
-  const paymentsList = Array.isArray(payments) ? payments : payments?.data || [];
-  const policiesList = Array.isArray(policies) ? policies : policies?.data || [];
+  const statusLabel = (status: string) => status
+    .replaceAll("_", " ")
+    .replace(/^./, (letter) => letter.toUpperCase());
+
+  const paymentLabel = (payment: any) => payment.type === "premium"
+    ? "Premium Payment"
+    : payment.type === "training_payment_plan"
+      ? "Fictional unpaid planning request"
+      : "Claim Payout";
+
+  const paymentsList = Array.isArray(payments) ? payments : Array.isArray(payments?.data) ? payments.data : [];
+  const policiesList = (Array.isArray(policies) ? policies : Array.isArray(policies?.data) ? policies.data : []).filter((policy: any) => policy.status === "active");
   const pendingPayments = paymentsList.filter((p: any) => p.status === "pending");
 
   return (
@@ -96,6 +106,14 @@ export default function Payment() {
             Manage your premium payments with Bitcoin
           </p>
         </div>
+
+        {(policiesLoading || paymentsLoading) && <p role="status" className="mb-6 rounded-lg border border-slate-200 bg-white p-4 text-slate-700">Loading payment records…</p>}
+        {(policiesError || paymentsError) && (
+          <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+            <p>{policiesError instanceof Error ? policiesError.message : paymentsError instanceof Error ? paymentsError.message : "Payment records could not be loaded."}</p>
+            <Button type="button" variant="outline" className="mt-3" onClick={() => { void retryPolicies(); void retryPayments(); }}>Retry</Button>
+          </div>
+        )}
 
         <Tabs defaultValue="pay" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
@@ -198,6 +216,11 @@ export default function Payment() {
                 <CardTitle>Payment History</CardTitle>
               </CardHeader>
               <CardContent>
+                {paymentsList.some((payment: any) => payment.status === "planning_draft_unpaid") && (
+                  <p role="status" className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                    Fictional training rows are unpaid planning requests only. They do not represent transactions, confirmations, delivery, or provider activity.
+                  </p>
+                )}
                 {paymentsList && paymentsList.length > 0 ? (
                   <div className="space-y-4">
                     {paymentsList.map((payment: any) => (
@@ -216,7 +239,7 @@ export default function Payment() {
                           
                           <div>
                             <div className="font-medium text-slate-900">
-                              {payment.type === "premium" ? "Premium Payment" : "Claim Payout"}
+                              {paymentLabel(payment)}
                             </div>
                             <div className="text-sm text-slate-600">
                               {new Date(payment.createdAt).toLocaleDateString()}
@@ -230,7 +253,7 @@ export default function Payment() {
                           </div>
                           <Badge className={`${getStatusColor(payment.status)} flex items-center space-x-1 mt-1`}>
                             {getStatusIcon(payment.status)}
-                            <span className="capitalize">{payment.status}</span>
+                            <span>{statusLabel(payment.status)}</span>
                           </Badge>
                         </div>
                       </div>

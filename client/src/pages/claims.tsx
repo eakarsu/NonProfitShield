@@ -1,9 +1,12 @@
-import { useState, useCallback } from "react";
+import { readableAssessmentValue } from "@shared/claim-assessment";
+import AssessmentActions from "@/components/ai/assessment-actions";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Camera } from "lucide-react";
 import { Link } from "wouter";
 import Header from "@/components/layout/header";
@@ -17,16 +20,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 
 const statusColors: Record<string, string> = {
+  training_draft_unsubmitted: "bg-slate-100 text-slate-800",
   submitted: "bg-blue-100 text-blue-800",
   processing: "bg-yellow-100 text-yellow-800",
   approved: "bg-green-100 text-green-800",
@@ -34,18 +33,28 @@ const statusColors: Record<string, string> = {
   paid: "bg-purple-100 text-purple-800",
 };
 
+const statusLabel = (status: string) => status
+  .replaceAll("_", " ")
+  .replace(/^./, (letter) => letter.toUpperCase());
+
 export default function Claims() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(15);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("submittedAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [selectedClaim, setSelectedClaim] = useState<any | null>(null);
   const [editingClaim, setEditingClaim] = useState<any | null>(null);
-  const [editStatus, setEditStatus] = useState("");
-  const [editApprovedAmount, setEditApprovedAmount] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editIncidentDate, setEditIncidentDate] = useState("");
+  const editRequest = useRef<AbortController | null>(null);
+  const deleteRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => { editRequest.current?.abort(); deleteRequest.current?.abort(); }, []);
+  const cancelEdit = () => { editRequest.current?.abort(); editRequest.current = null; setEditingClaim(null); };
+  const closeDetail = () => { deleteRequest.current?.abort(); deleteRequest.current = null; setSelectedClaim(null); };
 
   const queryParams = new URLSearchParams({
     page: page.toString(),
@@ -56,7 +65,7 @@ export default function Claims() {
     ...(Object.keys(filters).length > 0 && { filter: JSON.stringify(filters) }),
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error: claimsError, refetch: retryClaims } = useQuery({
     queryKey: ["/api/claims", queryParams.toString()],
     queryFn: async () => {
       const res = await fetch(`/api/claims?${queryParams}`, { credentials: "include" });
@@ -66,13 +75,23 @@ export default function Claims() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/claims/${id}`);
+    mutationFn: async ({ id, controller }: { id: number; controller: AbortController }) => {
+      const response = await fetch(`/api/claims/${id}`, { method: "DELETE", credentials: "include", signal: controller.signal });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.message || "Claim deletion failed.");
+      return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/claims"] });
+    onSuccess: (_data, variables) => {
+      if (variables.controller.signal.aborted) return;
       setSelectedClaim(null);
       toast({ title: "Claim deleted" });
+    },
+    onError: (error, variables) => {
+      if (!variables.controller.signal.aborted) toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+    },
+    onSettled: (_data, _error, variables) => {
+      if (deleteRequest.current === variables.controller) deleteRequest.current = null;
+      queryClient.invalidateQueries({ queryKey: ["/api/claims"] });
     },
   });
 
@@ -87,14 +106,23 @@ export default function Claims() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
-      const res = await apiRequest("PATCH", `/api/claims/${id}`, updates);
-      return res.json();
+    mutationFn: async ({ id, updates, controller }: { id: number; updates: { title: string; description: string; incidentDate: string }; controller: AbortController }) => {
+      const response = await fetch(`/api/claims/${id}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updates), signal: controller.signal });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.message || "Claim editing failed.");
+      return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/claims"] });
+    onSuccess: (_data, variables) => {
+      if (variables.controller.signal.aborted) return;
       setEditingClaim(null);
-      toast({ title: "Claim updated" });
+      toast({ title: "Claim details updated", description: "The original AI assessment and submitted inputs are retained." });
+    },
+    onError: (error, variables) => {
+      if (!variables.controller.signal.aborted) toast({ title: "Edit failed", description: error.message, variant: "destructive" });
+    },
+    onSettled: (_data, _error, variables) => {
+      if (editRequest.current === variables.controller) editRequest.current = null;
+      queryClient.invalidateQueries({ queryKey: ["/api/claims"] });
     },
   });
 
@@ -116,7 +144,7 @@ export default function Claims() {
       sortable: true,
       render: (item) => (
         <Badge className={statusColors[item.status] || "bg-slate-100 text-slate-800"}>
-          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+          {statusLabel(item.status)}
         </Badge>
       ),
     },
@@ -148,6 +176,7 @@ export default function Claims() {
       key: "status",
       label: "Status",
       options: [
+        { value: "training_draft_unsubmitted", label: "Training draft — unsubmitted" },
         { value: "submitted", label: "Submitted" },
         { value: "processing", label: "Processing" },
         { value: "approved", label: "Approved" },
@@ -165,9 +194,10 @@ export default function Claims() {
     window.open("/api/export/claims/pdf", "_blank");
   };
 
-  const tableData = data?.data || data || [];
-  const total = data?.total || tableData.length;
-  const totalPages = data?.totalPages || Math.ceil(total / limit);
+  const tableData = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+  const invalidPayload = !!data && !Array.isArray(data) && !Array.isArray(data?.data);
+  const total = typeof data?.total === "number" ? data.total : tableData.length;
+  const totalPages = typeof data?.totalPages === "number" ? data.totalPages : Math.ceil(total / limit);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -217,6 +247,8 @@ export default function Claims() {
           onExportCsv={handleExportCsv}
           onExportPdf={handleExportPdf}
           isLoading={isLoading}
+          errorMessage={claimsError instanceof Error ? claimsError.message : claimsError ? "Claims could not be loaded." : invalidPayload ? "Claims returned an invalid response." : undefined}
+          onRetry={() => void retryClaims()}
         />
       </div>
 
@@ -224,11 +256,11 @@ export default function Claims() {
       {selectedClaim && (
         <RowDetailDialog
           open={!!selectedClaim}
-          onOpenChange={(open) => !open && setSelectedClaim(null)}
+          onOpenChange={(open) => !open && closeDetail()}
           title={selectedClaim.title}
           subtitle={`Claim #${selectedClaim.id}`}
           badge={{
-            label: selectedClaim.status.charAt(0).toUpperCase() + selectedClaim.status.slice(1),
+            label: statusLabel(selectedClaim.status),
             className: statusColors[selectedClaim.status] || "bg-slate-100 text-slate-800",
           }}
           fields={[
@@ -272,11 +304,17 @@ export default function Claims() {
           ]}
           onEdit={() => {
             setEditingClaim(selectedClaim);
-            setEditStatus(selectedClaim.status);
-            setEditApprovedAmount(selectedClaim.approvedAmount || "");
+            setEditTitle(selectedClaim.title);
+            setEditDescription(selectedClaim.description);
+            setEditIncidentDate(String(selectedClaim.incidentDate).slice(0, 10));
             setSelectedClaim(null);
           }}
-          onDelete={() => deleteMutation.mutate(selectedClaim.id)}
+          busy={deleteMutation.isPending}
+          onDelete={() => {
+            const controller = new AbortController();
+            deleteRequest.current = controller;
+            deleteMutation.mutate({ id: selectedClaim.id, controller });
+          }}
         >
           {/* AI Assessment */}
           {selectedClaim.aiAssessment && (
@@ -285,7 +323,7 @@ export default function Claims() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <span className="text-slate-500">Damage Type:</span>
-                  <div className="font-medium">{selectedClaim.aiAssessment.damageType}</div>
+                  <div className="font-medium">{readableAssessmentValue(selectedClaim.aiAssessment.damageType)}</div>
                 </div>
                 <div>
                   <span className="text-slate-500">Severity:</span>
@@ -298,71 +336,57 @@ export default function Claims() {
                   </div>
                 </div>
                 <div>
-                  <span className="text-slate-500">Confidence:</span>
+                  <span className="text-slate-500">Model-reported confidence:</span>
                   <div className="font-medium">
                     {Math.round((selectedClaim.aiAssessment.confidence || 0) * 100)}%
                   </div>
                 </div>
               </div>
-              {selectedClaim.aiAssessment.recommendations && (
+              <div className="mt-3 space-y-2 text-sm">
+                <p><span className="text-slate-500">Repair complexity: </span>{selectedClaim.aiAssessment.repairComplexity}</p>
+                <p><span className="text-slate-500">Parts / labor: </span>${selectedClaim.aiAssessment.estimatedCost?.parts?.toLocaleString()} / ${selectedClaim.aiAssessment.estimatedCost?.labor?.toLocaleString()}</p>
+                <p><span className="text-slate-500">Affected components: </span>{Array.isArray(selectedClaim.aiAssessment.affectedComponents) ? selectedClaim.aiAssessment.affectedComponents.map((value: string) => readableAssessmentValue(value)).join(", ") : "Not reported"}</p>
+                <p className="whitespace-pre-wrap">{readableAssessmentValue(selectedClaim.aiAssessment.description)}</p>
+              </div>
+              {Array.isArray(selectedClaim.aiAssessment.recommendations) && (
                 <div className="mt-3">
                   <span className="text-slate-500 text-sm">Recommendations:</span>
                   <ul className="list-disc list-inside text-sm mt-1">
                     {selectedClaim.aiAssessment.recommendations.map((rec: string, i: number) => (
-                      <li key={i}>{rec}</li>
+                      <li key={i} className="whitespace-pre-wrap">{readableAssessmentValue(rec)}</li>
                     ))}
                   </ul>
                 </div>
               )}
+              <div className="mt-4"><AssessmentActions assessment={selectedClaim.aiAssessment} currentClaim={selectedClaim} /></div>
             </div>
           )}
         </RowDetailDialog>
       )}
 
       {/* Edit Dialog */}
-      <Dialog open={!!editingClaim} onOpenChange={(open) => !open && setEditingClaim(null)}>
+      <Dialog open={!!editingClaim} onOpenChange={(open) => !open && cancelEdit()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Claim #{editingClaim?.id}</DialogTitle>
+            <DialogDescription>Update the claim details. The original image assessment and submitted inputs are retained for review.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-4">
-            <div>
-              <Label>Status</Label>
-              <Select value={editStatus} onValueChange={setEditStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="submitted">Submitted</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="denied">Denied</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Approved Amount</Label>
-              <Input
-                type="number"
-                value={editApprovedAmount}
-                onChange={(e) => setEditApprovedAmount(e.target.value)}
-                placeholder="0.00"
-              />
-            </div>
+            <div><Label htmlFor="edit-claim-title">Claim title</Label><Input id="edit-claim-title" value={editTitle} onChange={(event) => setEditTitle(event.target.value)} disabled={updateMutation.isPending} maxLength={200} /></div>
+            <div><Label htmlFor="edit-claim-date">Incident date</Label><Input id="edit-claim-date" type="date" value={editIncidentDate} onChange={(event) => setEditIncidentDate(event.target.value)} disabled={updateMutation.isPending} /></div>
+            <div><Label htmlFor="edit-claim-description">Description</Label><Textarea id="edit-claim-description" value={editDescription} onChange={(event) => setEditDescription(event.target.value)} disabled={updateMutation.isPending} maxLength={15000} rows={5} /></div>
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setEditingClaim(null)}>
+              <Button variant="outline" onClick={cancelEdit}>
                 Cancel
               </Button>
               <Button
                 onClick={() => {
                   if (editingClaim) {
+                    const controller = new AbortController();
+                    editRequest.current = controller;
                     updateMutation.mutate({
-                      id: editingClaim.id,
-                      updates: {
-                        status: editStatus,
-                        ...(editApprovedAmount && { approvedAmount: editApprovedAmount }),
-                      },
+                      id: editingClaim.id, controller,
+                      updates: { title: editTitle, description: editDescription, incidentDate: editIncidentDate },
                     });
                   }
                 }}

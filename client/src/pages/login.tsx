@@ -18,13 +18,13 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-
   const {
-    register, setValue,
+    register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
   });
 
   const loginMutation = useMutation({
@@ -41,6 +41,23 @@ export default function Login() {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
     },
   });
+
+  const demoLoginMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/auth/demo");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({ title: "Demo workspace opened" });
+      setLocation("/");
+    },
+    onError: (error: Error) => {
+      toast({ title: "Demo login unavailable", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const authenticationPending = loginMutation.isPending || demoLoginMutation.isPending;
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -74,19 +91,22 @@ export default function Login() {
               </Link>
             </div>
 
-            <button
+            <p role="status" className="text-sm text-slate-600">
+              Demo login opens the configured fictional training workspace in one click. Credentials remain server-side.
+            </p>
+            <Button
               type="button"
-              onClick={() => { setValue('email', import.meta.env.VITE_DEMO_EMAIL || ''); setValue('password', import.meta.env.VITE_DEMO_PASSWORD || ''); }}
-              disabled={!import.meta.env.VITE_DEMO_EMAIL || !import.meta.env.VITE_DEMO_PASSWORD}
-              aria-label="Auto Fill Demo Credentials"
-              style={{ width: '100%', marginBottom: '12px', padding: '10px 14px', borderRadius: '8px', border: '1px solid currentColor', background: 'transparent', cursor: 'pointer' }}
+              variant="outline"
+              className="w-full"
+              onClick={() => demoLoginMutation.mutate()}
+              disabled={authenticationPending}
             >
-              Auto Fill Demo Credentials
-            </button>
+              {demoLoginMutation.isPending ? "Opening demo workspace..." : "Log in as Demo"}
+            </Button>
             <Button
               type="submit"
               className="w-full bg-primary-500 hover:bg-primary-600"
-              disabled={loginMutation.isPending}
+              disabled={authenticationPending}
             >
               {loginMutation.isPending ? "Signing In..." : "Sign In"}
             </Button>

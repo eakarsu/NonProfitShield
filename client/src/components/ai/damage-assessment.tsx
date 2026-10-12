@@ -1,29 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Edit, Brain, DollarSign, Wrench, AlertTriangle } from "lucide-react";
+import { CheckCircle, Brain, Wrench, AlertTriangle } from "lucide-react";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
+import { readableAssessmentValue, type DamageAssessment as Assessment } from "@shared/claim-assessment";
+import AssessmentActions from "./assessment-actions";
+
 interface DamageAssessmentProps {
-  assessment: {
-    damageType: string;
-    severity: "minor" | "moderate" | "major" | "total";
-    affectedComponents: string[];
-    repairComplexity: "simple" | "moderate" | "complex";
-    estimatedCost: {
-      parts: number;
-      labor: number;
-      total: number;
-    };
-    confidence: number;
-    description: string;
-    recommendations: string[];
-  };
+  assessment: Assessment;
+  claimId?: number;
   onComplete: () => void;
 }
 
-export default function DamageAssessment({ assessment, onComplete }: DamageAssessmentProps) {
+export default function DamageAssessment({ assessment, claimId, onComplete }: DamageAssessmentProps) {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "minor":
@@ -66,10 +57,11 @@ export default function DamageAssessment({ assessment, onComplete }: DamageAsses
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900 mb-4">AI Damage Assessment Complete</h1>
           <p className="text-xl text-slate-600">
-            Our AI has analyzed your damage photos and generated a comprehensive assessment
+            Your image assessment is saved with the submitted claim and ready for review.
           </p>
         </div>
 
+        {claimId && <p className="mb-4 text-sm text-slate-600">Claim #{claimId} · Submitted for review</p>}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -80,7 +72,7 @@ export default function DamageAssessment({ assessment, onComplete }: DamageAsses
                 <span>AI Analysis Results</span>
               </div>
               <Badge className={`${getConfidenceColor(assessment.confidence)} bg-transparent border`}>
-                {Math.round(assessment.confidence * 100)}% Confidence
+                {Math.round(assessment.confidence * 100)}% Model-reported confidence
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -92,7 +84,7 @@ export default function DamageAssessment({ assessment, onComplete }: DamageAsses
                 <div className="space-y-3">
                   <div className="flex items-center justify-between py-2 border-b border-slate-100">
                     <span className="text-slate-600">Damage Type</span>
-                    <span className="font-medium text-slate-900">{assessment.damageType}</span>
+                    <span className="font-medium text-slate-900">{readableAssessmentValue(assessment.damageType)}</span>
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-slate-100">
                     <span className="text-slate-600">Severity Level</span>
@@ -141,7 +133,7 @@ export default function DamageAssessment({ assessment, onComplete }: DamageAsses
                 {assessment.affectedComponents.map((component, index) => (
                   <Badge key={index} variant="outline" className="bg-slate-50">
                     <Wrench className="h-3 w-3 mr-1" />
-                    {component}
+                    {readableAssessmentValue(component)}
                   </Badge>
                 ))}
               </div>
@@ -150,8 +142,8 @@ export default function DamageAssessment({ assessment, onComplete }: DamageAsses
             {/* Description */}
             <div>
               <h3 className="font-semibold text-slate-900 mb-3">Damage Description</h3>
-              <p className="text-slate-700 bg-slate-50 rounded-lg p-4">
-                {assessment.description}
+              <p className="text-slate-700 bg-slate-50 rounded-lg p-4 whitespace-pre-wrap">
+                {readableAssessmentValue(assessment.description)}
               </p>
             </div>
 
@@ -162,29 +154,18 @@ export default function DamageAssessment({ assessment, onComplete }: DamageAsses
                 {assessment.recommendations.map((recommendation, index) => (
                   <div key={index} className="flex items-start space-x-2 p-3 bg-blue-50 rounded-lg">
                     <AlertTriangle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-blue-800 text-sm">{recommendation}</span>
+                    <span className="text-blue-800 text-sm whitespace-pre-wrap">{readableAssessmentValue(recommendation)}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Action Buttons */}
+            <AssessmentActions assessment={assessment} />
             <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-200">
-              <Button 
-                onClick={onComplete}
-                className="flex-1 bg-primary-500 hover:bg-primary-600"
-              >
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Approve & Submit Claim
+              <Button onClick={onComplete} className="flex-1 bg-primary-500 hover:bg-primary-600">
+                <CheckCircle className="mr-2 h-4 w-4" />View saved claim
               </Button>
-              <Button 
-                variant="outline"
-                onClick={onComplete}
-                className="flex-1"
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Request Manual Review
-              </Button>
+              <Button variant="outline" onClick={onComplete}>Cancel</Button>
             </div>
           </CardContent>
         </Card>

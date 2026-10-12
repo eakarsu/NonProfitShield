@@ -24,7 +24,7 @@ executeScript(`
   CREATE INDEX IF NOT EXISTS runtime_ai_interactions_user_idx ON runtime_ai_interactions(user_id,created_at DESC);
   INSERT INTO runtime_app_users(email,password_hash,display_name,role,active)
   VALUES(${literal(email)},${literal(hash)},'Runtime Administrator','admin',TRUE)
-  ON CONFLICT(email) DO UPDATE SET password_hash=EXCLUDED.password_hash,role='admin',active=TRUE;
+  ON CONFLICT(email) DO NOTHING;
   COMMIT;
 `);
 console.log('Runtime identity and AI persistence reconciled.');

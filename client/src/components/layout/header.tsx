@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Shield, Menu, User, LogOut, Settings } from "lucide-react";
+import { Shield, User, LogOut, Settings } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   DropdownMenu,
@@ -65,6 +65,7 @@ export default function Header() {
                 {navLink("/policies", "Policies")}
                 {navLink("/claims", "Claims")}
                 {navLink("/payment", "Payments")}
+                {navLink("/ai-operations", "AI Operations")}
                 {navLink("/ai-tools", "AI Tools")}
               </nav>
 
@@ -102,15 +103,12 @@ export default function Header() {
                 </DropdownMenu>
               </div>
 
-              {/* Mobile menu button */}
-              <Button variant="ghost" size="sm" className="md:hidden">
-                <Menu className="h-5 w-5" />
-              </Button>
             </>
           ) : (
             <>
               {/* Public Navigation */}
               <nav className="hidden md:flex items-center space-x-8">
+                {navLink("/ai-operations", "AI Operations")}
                 {navLink("/coverage", "Coverage")}
                 {navLink("/about", "About")}
                 {navLink("/contact", "Support")}
@@ -131,6 +129,11 @@ export default function Header() {
             </>
           )}
         </div>
+        <nav aria-label="Mobile AI navigation" className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-slate-100 py-3 text-sm md:hidden">
+          {isAuthenticated && navLink("/ai-tools", "AI Tools")}
+          {navLink("/ai-operations", "AI Operations")}
+          {isAuthenticated && navLink("/claims", "Claims")}
+        </nav>
       </div>
     </header>
   );
