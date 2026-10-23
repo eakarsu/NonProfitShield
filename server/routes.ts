@@ -173,8 +173,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         [process.env.DEFAULT_EMAIL, process.env.DEFAULT_PASSWORD],
       ];
       const [configuredEmail, configuredPassword] = configuredPairs.find(([candidateEmail, candidatePassword]) => candidateEmail?.trim() && candidatePassword) || [];
+      const demoPasswordFallback = process.env.DEMO_LOGIN_PASSWORD || process.env.PROVISION_ADMIN_PASSWORD || "";
       const email = (configuredEmail || "").trim();
-      const password = configuredPassword || "";
+      const password = configuredPassword || demoPasswordFallback;
       if (!email || !password) {
         return res.status(503).json({ message: "Demo workspace is not configured" });
       }

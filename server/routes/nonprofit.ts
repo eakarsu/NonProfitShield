@@ -53,7 +53,20 @@ router.post("/records/:kind", permit("create"), async (req: AuthorizedRequest, r
 router.get("/records/:kind", permit("read"), async (req: AuthorizedRequest, res, next) => {
   try {
     if (!resourceKinds.includes(req.params.kind as ResourceKind)) throw new DomainError("unsupported_resource_kind");
-    const result = await pool.query("SELECT id,kind,external_ref,state,owner_id,data,data_hash,expires_at,created_at,updated_at FROM nonprofit_records WHERE organization_id=$1 AND kind=$2 AND expires_at>NOW() ORDER BY created_at DESC LIMIT 500", [req.nonprofitIdentity!.organizationId, req.params.kind]);
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const state = typeof req.query.state === "string" ? req.query.state : "";
+    const params: unknown[] = [req.nonprofitIdentity!.organizationId, req.params.kind];
+    const clauses = ["organization_id=$1", "kind=$2", "expires_at>NOW()"];
+    if (state) { params.push(state); clauses.push(`state=$${params.length}`); }
+    if (q) { params.push(`%${q}%`); clauses.push(`(external_ref ILIKE $${params.length} OR data::text ILIKE $${params.length})`); }
+    if (req.query.format === "csv" || req.query.format === "json") {
+      const result = await pool.query(`SELECT id,kind,external_ref,state,owner_id,data_hash,created_at FROM nonprofit_records WHERE ${clauses.join(" AND ")} ORDER BY created_at DESC LIMIT 500`, params);
+      if (req.query.format === "json") { res.setHeader("Content-Disposition", 'attachment; filename="records.json"'); return res.type("application/json").send(JSON.stringify({ exportedAt: new Date().toISOString(), records: result.rows }, null, 2)); }
+      const esc = (v: unknown) => { if (v === null || v === undefined) return ""; const s = String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+      const fields = ["id", "kind", "external_ref", "state", "owner_id", "data_hash", "created_at"];
+      res.setHeader("Content-Disposition", 'attachment; filename="records.csv"'); return res.type("text/csv").send([fields.join(","), ...result.rows.map((r: any) => fields.map((k) => esc(r[k])).join(","))].join("\n") + "\n");
+    }
+    const result = await pool.query(`SELECT id,kind,external_ref,state,owner_id,data,data_hash,expires_at,created_at,updated_at FROM nonprofit_records WHERE ${clauses.join(" AND ")} ORDER BY created_at DESC LIMIT 500`, params);
     res.json(result.rows);
   } catch (error) { next(error); }
 });

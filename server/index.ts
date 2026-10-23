@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
 import nonprofitRouter from "./routes/nonprofit";
+import featurePackRouter from "./routes/feature-pack";
 import { pool } from "./db";
 
 const app = express();
@@ -31,6 +32,7 @@ app.use((req, res, next) => {
   app.use(["/api/ai", "/api/extras"], (_req, res) => res.status(410).json({ error: "legacy_ai_surface_quarantined", replacement: "/api/nonprofit/v1" }));
   const server = await registerRoutes(app);
   app.use("/api/nonprofit/v1", nonprofitRouter);
+  app.use("/api/feature", featurePackRouter);
 
   // Seed data is an explicit development-only operation, never a startup action.
   if (process.env.NODE_ENV === "development" && process.env.ALLOW_DEVELOPMENT_SEED === "true") app.post("/api/seed", async (_req: Request, res: Response) => {
